@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.telesoft.mvnogen.mapper.login.LoginMapper">
+
+	<select id="loginMapper_loginInfo" parameterType="map" resultType="map">
+		SELECT 
+			ADMIN_PW,
+			ADMIN_PW_SALT,
+			GRADE,
+			FAIL_CNT,
+			STATUS,
+			ADMIN_NAME,
+			AGENT_ID,
+			ADMIN_TYPE,
+			LOGIN_IP,
+			MOBILE,
+			PHONE,
+			LAST_DATE,
+			COALESCE(PASSWD_DATE, CURRENT_DATE - INTERVAL '300 DAY') PASSWD_DATE
+		FROM ADMIN
+		WHERE ADMIN_TYPE = 'B' 
+			AND ADMIN_ID = #{login_id}		
+	</select>
+	
+	<select id="loginMapper_accessInfo" parameterType="map" resultType="map">
+		SELECT COUNT(*) ACCESS_CNT
+		FROM ADMIN_LOGIN_ACCESS
+		WHERE LOG_DATE > NOW() - INTERVAL '1 DAY'
+			AND (ADMIN_ID = #{login_id} OR LOGIN_IP = #{login_ip})
+	</select>
+		
+	<update id="loginMapper_updateFailCnt" parameterType="map">
+		UPDATE ADMIN
+	    SET FAIL_CNT = FAIL_CNT + 1
+	    WHERE ADMIN_ID = #{login_id}
+	    	AND ADMIN_TYPE = 'B'
+	</update>
+	
+	<update id="loginMapper_stopStatus" parameterType="map">
+		UPDATE ADMIN
+	    SET STATUS = 'S', DEL_DATE = NOW()
+	    WHERE ADMIN_ID = #{login_id}
+	    	AND ADMIN_TYPE = 'B'
+	</update>
+	
+	<update id="loginMapper_updateIp" parameterType="map">
+		UPDATE ADMIN
+	    SET LOGIN_IP = #{login_ip}
+	    WHERE ADMIN_ID = #{login_id}
+	    	AND ADMIN_TYPE = 'B'
+	</update>
+	
+	<update id="loginMapper_updateAdmin" parameterType="map">
+	    UPDATE ADMIN
+	    SET FAIL_CNT = 0,
+	        LAST_DATE = NOW(),
+	        MAX_TRY_CNT = (CASE WHEN MAX_TRY_CNT IS NULL THEN 0 ELSE MAX_TRY_CNT END) + 1,
+			LOGIN_IP = (CASE WHEN #{ret_cd} = '0000' THEN #{login_ip} ELSE LOGIN_IP END)
+	    WHERE ADMIN_ID = #{login_id}
+	</update>
+		
+	<insert id="loginMapper_accessBlock" parameterType="map">
+		INSERT INTO ACCESS_BLOCK
+		(BLOCK_IP, BLOCK_DATE, ADMIN_ID)
+		VALUES
+		(#{login_ip}, NOW(), #{login_id})
+	</insert>
+	
+	<insert id="loginMapper_accessLog" parameterType="map">
+		INSERT INTO ADMIN_LOGIN_ACCESS
+		(SEQ, LOG_DATE, ADMIN_ID, ADMIN_NAME, ADMIN_TYPE, BROWSER, LOGIN_IP,DOMAIN, JOB_PROC, DESC_INFO, RESULT, LAST_DT)
+		VALUES
+		(NEXTVAL('S_ADMIN_LOGIN'), NOW(), #{id}, #{adminName}, #{adminType}, #{browser}, #{ip}, #{serverName}, 'P_LOGIN', '', #{resultCd}, NOW())
+	</insert>
+	
+	
+	<!-- SMS 문자인증 요청 -->
+	<select id="loginMapper_authReqCheck" parameterType="map" resultType="map">
+		SELECT COUNT(*) EXIST_CNT, MAX(REQ_DATE) REQ_DATE
+		FROM ADMIN_IP_AUTH_TMP
+		WHERE ADMIN_ID = #{id}
+		AND ADMIN_MOBILE = #{mobile}
+		AND REQ_TYPE='WEB'
+	</select>
+	
+	<select id="loginMapper_authReqCheck2" parameterType="map" resultType="map">
+		SELECT
+			MOBILE,
+			PHONE
+		FROM ADMIN
+		WHERE ADMIN_TYPE = 'B' 
+			AND ADMIN_ID = #{id}
+	</select>
+	
+	<insert id="loginMapper_authReqInsert" parameterType="map">
+		INSERT INTO ADMIN_IP_AUTH_TMP(
+			AUTH_SEQ, ADMIN_ID, ADMIN_MOBILE, 
+			REQ_IP, REQ_DATE, REQ_AUTH_NO, 
+			RES_DATE, RES_AUTH_NO, RET_CODE, 
+			RET_MSG, DURATION, EXPIRE_DATE,
+			REQ_TYPE
+		) VALUES(
+			NEXTVAL('S_SMS_SEQ'), #{id}, #{mobile}, 
+			#{ip}, NOW(), #{reqno}, 
+			NOW(), NULL, NULL, 
+			NULL, 180, NOW() + INTERVAL '3 minutes',
+			'WEB'
+		)
+	</insert>
+	
+	<update id="loginMapper_authReqUpdate" parameterType="map">
+		UPDATE ADMIN_IP_AUTH_TMP
+		SET	AUTH_SEQ = NEXTVAL('S_SMS_SEQ'),
+			ADMIN_MOBILE = #{mobile},
+			REQ_IP = #{ip},
+			REQ_DATE = NOW(),
+			REQ_AUTH_NO = #{reqno},
+			RES_DATE = NOW(),
+			RES_AUTH_NO = NULL,
+			RET_CODE = NULL,
+			RET_MSG = NULL,
+			DURATION = 180,
+			EXPIRE_DATE = NOW() + INTERVAL '3 minutes'
+		WHERE ADMIN_ID = #{id}
+		AND ADMIN_MOBILE = #{mobile}
+		AND REQ_TYPE='WEB'
+	</update>		
+	
+	<delete id="loginMapper_authReqDelete" parameterType="map">
+		DELETE FROM ADMIN_IP_AUTH_TMP 
+		WHERE ADMIN_ID = #{id}
+			AND ADMIN_MOBILE = #{mobile}
+			AND REQ_TYPE='WEB'
+	</delete>
+	
+	<!-- SMS 문자인증 응답 -->
+	<select id="loginMapper_authResCheck" parameterType="map" resultType="map">
+		SELECT REQ_AUTH_NO, REQ_DATE
+		FROM ADMIN_IP_AUTH_TMP
+		WHERE ADMIN_ID = #{id}
+			AND REQ_DATE = ( SELECT MAX(REQ_DATE) FROM ADMIN_IP_AUTH_TMP WHERE ADMIN_ID = #{id} AND REQ_TYPE = 'WEB' )
+			AND REQ_TYPE = 'WEB'
+	</select>
+	
+	<update id="loginMapper_authResUpdate" parameterType="map">
+		UPDATE ADMIN_IP_AUTH_TMP 
+		SET RES_AUTH_NO = #{resno} 
+		WHERE ADMIN_ID = #{id}
+			AND REQ_TYPE='WEB'
+	</update>	
+	
+	<insert id="loginMapper_authResInsert" parameterType="map">
+		INSERT INTO ADMIN_IP_AUTH (
+			AUTH_SEQ, ADMIN_ID, ADMIN_MOBILE, 
+			REQ_IP, REQ_DATE, REQ_AUTH_NO, 
+			RES_DATE, RES_AUTH_NO, RET_CODE, 
+			RET_MSG, DURATION, EXPIRE_DATE
+		)(
+			SELECT 
+				AUTH_SEQ, ADMIN_ID, ADMIN_MOBILE, 
+				REQ_IP, REQ_DATE, REQ_AUTH_NO, 
+				RES_DATE, RES_AUTH_NO, RET_CODE, 
+				RET_MSG, DURATION, EXPIRE_DATE
+			FROM ADMIN_IP_AUTH_TMP 
+			WHERE ADMIN_ID = #{id}
+				AND REQ_TYPE='WEB'
+		)
+	</insert>
+	
+	<delete id="loginMapper_authResDelete" parameterType="map">
+		DELETE FROM ADMIN_IP_AUTH_TMP 
+		WHERE ADMIN_ID = #{id}
+		AND REQ_TYPE = 'WEB'
+	</delete>
+	
+	<update id="loginMapper_authResUpdate2" parameterType="map">
+		UPDATE ADMIN 
+		SET LOGIN_IP = #{ip},
+			LAST_DATE = NOW()
+		WHERE ADMIN_ID = #{id}
+	</update>	
+	
+	<update id="loginMapper_authResUpdate3" parameterType="map">
+		UPDATE ADMIN_LOGIN_ACCESS
+		SET RESULT = '0000'
+		WHERE ADMIN_ID = #{id}
+	</update>	
+	
+</mapper>

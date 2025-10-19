@@ -1,0 +1,285 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.telesoft.mvnogen.customer.customer_lgt_list">
+	<sql id="customer_lgt_list">
+
+		SELECT
+		   B.SERVICE_ACCOUNT,
+		   SERVICE_NUMBER,
+		   B.SERVICE_TYPE,
+		   CASE WHEN BNP_CO_CD IS NULL THEN '신규가입' ELSE '번호이동' END AS OPEN_TYPE,
+		   B.SERVICE_TYPE SERVICE_TYPE_NM,
+		   B.TOTAL_CNT,
+		   TOTAL_CHG,
+		   BALANCE,
+		   B.SERVICE_CODE PROD_CD,
+		   B.SERVICE_CODE PROD_CD_NM,
+		   COALESCE((SELECT '정액제' FROM CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = B.SERVICE_CODE LIMIT 1), '종량제') JONGBAND,
+		   CNMLOB,
+		   CUSTTP CUSTTP_NM,
+		   C.CINDTIND CINDTIND_NM,
+		   CSSN,
+		   STATUS,
+		   STATUS STATUS_NM,
+		   ENTER_DATE,
+		   AGENT_ID,
+		   AGENT_ID AGENT_NAME
+		   <!--
+		   (SELECT BASIC_FEE FROM CODE_SERVICE_INFO WHERE PROD_CD = B.SERVICE_CODE) BASIC_FEE,
+		   (SELECT REMARK FROM CODE_SERVICE_INFO WHERE PROD_CD = B.SERVICE_CODE) SERVICE_CODE_DESC,
+		   NAT_CD,
+		   (CASE WHEN NAT_CD = '' THEN '미등록' ELSE F_GET_COMMON_CD_NM('LGT_CUS', 'NAT_CD', NAT_CD ) END) NATIONALITY_NM,
+		   LSTCOMACTVDATE,
+		   TO_CHAR(STAY_EXPIR_DT, 'YY/MM/DD') STAY_EXPIR_DT,
+		   O_AGENT_ID,
+		   F_GET_AGENT_INFO('AGENT_NAME', O_AGENT_ID) O_AGENT_NAME,
+		   (SELECT (CASE WHEN AGENT_TYPE = 'D' THEN AGENT_NAME ELSE F_GET_AGENT_INFO('AGENT_NAME', HIGH_AGENT) END) FROM AGENT WHERE AGENT_ID = B.AGENT_ID) DEALER_NAME,
+		   COALESCE(F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'LANG', LANG),'미등록') LANG_NM,
+		   TO_CHAR(STOP_DT, 'YY/MM/DD HH24:MI') STOP_DT,
+		   F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'SUS', COALESCE(B.STOP_CD, '-')) STOP_GUBUN_CODE_NM,
+		   COALESCE(F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'STOP_RSN_CD', STOP_RSN_CD), '-') STOP_RSN_CD_NM,
+		   TO_CHAR(CANCEL_DT, 'YY/MM/DD HH24:MI') CANCEL_DT,
+		   F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'CAN', COALESCE(B.CANCEL_CD, '-')) CANCEL_GUBUN_CODE_NM,
+		   CANCEL_RSN_CD,
+		   COALESCE(F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'CANCEL_RSN_CD', CANCEL_RSN_CD), '-') CANCEL_RSN_CD_NM,
+		   G3IND,
+		   ICCID,
+		   USIM_MDL_NM,
+		   CADDRZIP,
+		   CPRMADDRLN,
+		   CSECADDRLN,
+		   STAY_QUALF_CD,
+		   F_GET_COMMON_CD_NM('LGT_CUS', 'STAY_QUALF_CD', C.STAY_QUALF_CD) STAY_QUALF_CD_NM,
+		   MODNM,
+		   SRLNO,
+		   IMEI,
+		   (
+				SELECT SQ.PRDC_CONT_MTH_CNT 
+					FROM (
+								SELECT PRDC_CONT_MTH_CNT, CONTRACT_NUM 
+								FROM LGT_FEATURE 
+								WHERE SRVTP = 'P' 
+								AND EVNTDT IS NOT NULL
+								AND EXPDT > TO_CHAR(NOW(), 'YYYYMMDD')
+								ORDER BY EVNTDT DESC
+							) SQ
+					WHERE CONTRACT_NUM = A.CONTRACT_NUM 
+					LIMIT 1
+		   ) PRDC_CONT_MTH_CNT,
+		   ALLOT_MTH_CNT,
+		   BNP_CO_CD,
+		   F_GET_COMMON_CD_NM('LGT_SUB', 'BNP_CO_CD', BNP_CO_CD) BNP_CO_CD_NM,
+		   OPEN_PROC_ID,
+		   OPEN_PROC_NM,
+		   A.BAN BAN
+		   -->
+		FROM LGT_SUB A,
+			 CUSTOMER_LGT B,
+			 LGT_CUS C
+		WHERE A.CONTRACT_NUM = B.SERVICE_ACCOUNT
+			  AND A.CUSTOMER_ID = C.CUSTOMER_ID
+			  AND STATUS IN ('A', 'S')
+			  AND A.LSTCOMACTVDATE >= TO_DATE('20240301', 'YYYYMMDD')
+	<!--
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'contract_num'">
+					    AND A.CONTRACT_NUM = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (A.SERVICE_NUMBER = #{sword} OR A.SERVICE_NUMBER = '010' || #{sword})
+					</when>
+					<when test="sst == 'service_number2'">
+						AND (A.SERVICE_NUMBER = #{sword} OR A.SERVICE_NUMBER = '010' || #{sword} OR A.CONTRACT_NUM IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_CTN_HIST WHERE (OLD_CTN = #{sword} OR OLD_CTN = '010' || #{sword}) ))
+					</when>
+					<when test="sst == 'iccid'">
+						AND ICCID LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'cnmlob'">
+					  	AND (CNMLOB LIKE '%'||UPPER(#{sword})||'%' OR CNMLOB LIKE '%'||LOWER(#{sword})||'%')
+					</when>
+					<when test="sst == 'customer_id'">
+						AND C.CUSTOMER_ID LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'srlno'">
+						AND A.SRLNO = LPAD( #{sword}, 20, '0')
+					</when>
+					<when test="sst == 'cssn'">
+						AND (CSSN = AES256LOCALENC(#{sword}) OR CSSN = AES256LOCALENC(#{sword} || '000000') OR USSN = AES256LOCALENC(#{sword}) OR USSN = AES256LOCALENC(#{sword} || '000000') ) 
+					</when>
+					<otherwise>
+						AND ${@com.telesoft.mvnogen.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+				<choose>
+					<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+						${@com.telesoft.mvnogen.common.service.CommonUtil@get_section_query("A.LSTCOMACTVDATE", null, s_dt, e_dt, "Y", null)}					
+					</when>
+					<otherwise>
+						AND B.SERVICE_ACCOUNT = '99999999999999999999'
+					</otherwise>
+				</choose>			
+			</otherwise>
+		</choose>	  
+		
+		${@com.telesoft.mvnogen.common.service.CommonUtil@get_section_query("C.STAY_EXPIR_DT", null, s_expir_dt, e_expir_dt, "Y", null)}
+	   	${@com.telesoft.mvnogen.common.service.CommonUtil@get_multi_select_query("B.SERVICE_CODE", service_code)}
+	   	${@com.telesoft.mvnogen.common.service.CommonUtil@get_multi_select_query("C.CUSTTP", custtp)}
+	   	
+		<if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    <if test="nat_cd != '' and nat_cd != null ">
+	   	    AND NAT_CD = #{nat_cd}
+   	    </if>
+   	    <if test="service_type != '' and service_type != null ">
+	   	    AND B.SERVICE_TYPE = #{service_type}
+   	    </if>
+   	    <if test="cindtind != '' and cindtind != null ">
+	   	    AND C.CINDTIND = #{cindtind}
+   	    </if>
+   	    <choose>
+			<when test='doc_cnt == "Y"'>
+			  	AND A.CONTRACT_NUM IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND SERVICE_ACCOUNT = A.CONTRACT_NUM AND ENTER_DATE >= DATE_TRUNC('day', A.LSTCOMACTVDATE) LIMIT 1)
+			</when>
+			<when test='doc_cnt == "N"'>
+			  	AND A.CONTRACT_NUM NOT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND SERVICE_ACCOUNT = A.CONTRACT_NUM AND ENTER_DATE >= DATE_TRUNC('day', A.LSTCOMACTVDATE) LIMIT 1)
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		<choose>
+			<when test='mnp_flag == "Y"'>
+			  	AND BNP_CO_CD IS NOT NULL
+			</when>
+			<when test='mnp_flag == "N"'>
+			  	AND BNP_CO_CD IS NULL
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="agent_id == 'NONE'">
+			  	AND AGENT_ID IS NULL
+			</when>
+			<when test="agent_id != '' and agent_id != null">
+			  	AND (AGENT_ID in (SELECT AGENT_ID FROM AGENT WHERE AGENT_TYPE IN ('D', 'M') AND AGENT_ID = #{agent_id} OR HIGH_AGENT = #{agent_id}))
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+			-->
+	</sql>
+	
+	<sql id="customer_lgt_list_add">
+	<!--
+	<![CDATA[
+		,COALESCE((SELECT COUNT(*) FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND ENTER_DATE >= DATE_TRUNC('day', fq.LSTCOMACTVDATE) AND SERVICE_ACCOUNT = fq.SERVICE_ACCOUNT), 0) DOC_CNT
+	]]>
+	-->
+	</sql>
+	
+	<sql id="customer_lgt_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	
+	<select id="customer_lgt_list" parameterType="map" resultType="map">
+		SELECT
+           fq.SERVICE_ACCOUNT,
+		   fq.SERVICE_NUMBER,
+		   fq.SERVICE_TYPE,
+		   fq.OPEN_TYPE,
+		   fq.SERVICE_TYPE_NM,
+		   fq.TOTAL_CNT,
+		   fq.TOTAL_CHG,
+		   fq.BALANCE,
+		   fq.PROD_CD,
+		   fq.PROD_CD_NM,
+		   fq.JONGBAND,
+		   fq.CNMLOB,
+		   fq.CUSTTP_NM,
+		   fq.CINDTIND_NM,
+		   fq.CSSN,
+		   fq.STATUS,
+		   fq.STATUS_NM,
+		   fq.ENTER_DATE,
+		   fq.AGENT_ID,
+		   fq.AGENT_NAME
+		   <!--
+		   fq.BASIC_FEE,
+		   fq.SERVICE_CODE_DESC,
+		   fq.NAT_CD,
+		   fq.NATIONALITY_NM,
+		   fq.LSTCOMACTVDATE,
+		   fq.STAY_EXPIR_DT,
+		   fq.O_AGENT_ID,
+		   fq.O_AGENT_NAME,
+		   fq.DEALER_NAME,
+		   fq.LANG_NM,
+		   fq.STOP_DT,
+		   fq.STOP_GUBUN_CODE_NM,
+		   fq.STOP_RSN_CD_NM,
+		   fq.CANCEL_DT,
+		   fq.CANCEL_GUBUN_CODE_NM,
+		   fq.CANCEL_RSN_CD,
+		   fq.CANCEL_RSN_CD_NM,
+		   fq.G3IND,
+		   fq.ICCID,
+		   fq.USIM_MDL_NM,
+		   fq.CADDRZIP,
+		   fq.CPRMADDRLN,
+		   fq.CSECADDRLN,
+		   fq.STAY_QUALF_CD,
+		   fq.STAY_QUALF_CD_NM,
+		   fq.MODNM,
+		   fq.SRLNO,
+		   fq.IMEI,
+		   fq.PRDC_CONT_MTH_CNT,
+		   fq.ALLOT_MTH_CNT,
+		   fq.BNP_CO_CD,
+		   fq.BNP_CO_CD_NM,
+		   fq.OPEN_PROC_ID,
+		   fq.OPEN_PROC_NM,
+		   fq.BAN
+		   -->
+		<include refid="customer_lgt_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_list" />
+		ORDER BY A.LSTCOMACTVDATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+<!--	<select id="customer_lgt_list_excel" parameterType="map" resultType="map">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_list_add" /><![CDATA[
+	            ]]><include refid="customer_lgt_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>-->
+
+	<select id="customer_lgt_list_tot_cnt" parameterType="map" resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM (
+    ]]>
+    	<include refid="customer_lgt_list" />
+    <![CDATA[
+         ) AA
+	]]>
+	</select>
+</mapper>

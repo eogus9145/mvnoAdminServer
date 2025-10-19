@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.telesoft.mvnogen.mapper.common.CommonSQLFunctionMapper">
+	
+	<select id="getCommonCdNm" parameterType="map" resultType="java.lang.String">
+		SELECT CD_NM
+        FROM CODE_COMMON
+        WHERE TABLE_NM = TRIM(#{table})
+        AND COL = TRIM(#{col})
+        AND CD = TRIM(#{val})
+        LIMIT 1
+	</select>
+	
+	<select id="getServiceCdNm" parameterType="map" resultType="java.lang.String">
+		SELECT SERVICE_NAME
+		FROM CODE_SERVICE_INFO
+		WHERE PROD_CD = TRIM(#{val})
+		LIMIT 1
+	</select>
+	
+	<select id="getAgentInfo" parameterType="map" resultType="java.lang.String">
+		SELECT
+			CASE
+				WHEN #{type} = 'AGENT_NAME' THEN AGENT_NAME
+				WHEN #{type} = 'HIGH_AGENT' THEN HIGH_AGENT
+				WHEN #{type} = 'HIGHEST_AGENT' THEN COALESCE((SELECT HIGH_AGENT FROM AGENT WHERE AGENT_ID = AGENT.AGENT_ID AND HIGH_AGENT IS NOT NULL AND HIGH_AGENT != 'BONSA'), AGENT.AGENT_ID)
+				WHEN #{type} = 'REPAYMENT' THEN REPAYMENT
+				WHEN #{type} = 'AGENT_MOBILE' THEN MOBILE
+				WHEN #{type} = 'OWNER_NAME' THEN OWNER_NAME
+				WHEN #{type} = 'ZIPCODE_O' THEN ZIPCODE_O
+				WHEN #{type} = 'ADDRESS_O_1' THEN ADDRESS_O_1
+				WHEN #{type} = 'ADDRESS_O_2' THEN ADDRESS_O_2
+				ELSE ''
+			END AS RET_VALUE
+		FROM AGENT
+		WHERE AGENT_ID = #{val}
+	</select>
+	
+</mapper>
