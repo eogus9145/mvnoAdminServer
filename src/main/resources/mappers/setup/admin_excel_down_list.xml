@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.admin_excel_down_list">
+	<sql id="admin_excel_down_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A ADMIN_EXCEL_DOWNLOAD_IDX1)*/
+			MENU,
+			REG_SYSTEM,
+		    ADMIN_ID,
+		    ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+		    DESC_INFO,
+		    IP,
+		    BROWSER,
+		    TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT
+		FROM ${db.mainschema}.ADMIN_EXCEL_DOWNLOAD A
+		WHERE REG_DT >= TO_DATE('20221101', 'YYYYMMDD')
+		   ]]>
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'admin_nm'">
+					    AND ADMIN_ID IN (SELECT ADMIN_ID FROM ${db.mainschema}.ADMIN WHERE ADMIN_NAME LIKE '%' || #{sword} || '%')
+					</when>
+					<when test="sst == 'ip'">
+						AND IP LIKE  '%' || #{sword} || '%' 
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+		
+		<if test="reg_system != '' and reg_system != null ">
+	   	    AND REG_SYSTEM = #{reg_system}
+   	    </if>
+
+		${@telecentro.common.service.CommonUtil@get_section_query("A.REG_DT", null, s_dt, e_dt, "Y", null)}
+
+	</sql>
+	<sql id="admin_excel_down_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="admin_excel_down_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="admin_excel_down_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.MENU,
+			fq.REG_SYSTEM,
+		    fq.ADMIN_ID,
+		    fq.ADMIN_NM,
+		    fq.DESC_INFO,
+		    fq.IP,
+		    fq.BROWSER,
+		    fq.REG_DT
+	]]>
+		<include refid="admin_excel_down_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="admin_excel_down_list" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+	
+	<select id="admin_excel_down_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="admin_excel_down_list_add" /><![CDATA[
+	            ]]><include refid="admin_excel_down_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="admin_excel_down_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="admin_excel_down_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="admin_excel_down_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_charge_info_popup_frame">
+
+	<select id="customer_skt_view_charge_info_popup_frame_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT BL_ACNT_NUM,  
+				PAY_MTHD_CD, 
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER','PAY_MTHD_CD',PAY_MTHD_CD) PAY_MTHD_CD_NM, 
+				BILL_ISUE_TYP_CD, 
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER','BILL_ISUE_TYP_CD',BILL_ISUE_TYP_CD) BILL_ISUE_TYP_CD_NM,
+				ZIP, 
+				ADDR_INFO1,
+				ADDR_INFO2,
+				EMAIL_ADDR, 
+				BANK_CD, 
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER','BANK_CD',BANK_CD) BANK_NM,
+				AES256LOCALDEC(BANK_NUM) BANK_NUM, 
+				DPSTR_NM, 
+				AES256LOCALDEC(BANK_CTZ_NUM) BANK_CTZ_NUM,
+				CARD_CO_CD, 
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER','CARD_CO_CD',CARD_CO_CD) CARD_CO_NM, 
+				AES256LOCALDEC(CARD_NUM) CARD_NUM, 
+				CARD_EFF_YM,
+				CARD_OWNR_NM 
+			FROM SKT_CUSTOMER
+			WHERE SERVICE_ACCOUNT = #{account}
+		]]>
+	</select>
+</mapper>

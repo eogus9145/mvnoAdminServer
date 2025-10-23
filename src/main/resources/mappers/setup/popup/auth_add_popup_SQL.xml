@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.auth_add_popup">
+
+	<!-- 권한관리 권한정보를 얻어옴 -->
+	<select id="auth_add_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT GRADE,
+			   GRADE_NAME
+	    FROM ${db.mainschema}.ADMIN_GRADE
+	    WHERE GRADE = #{no}
+		]]>
+	</select>
+	
+	<!-- 권한관리 권한정보를 얻어옴 -->
+	<select id="auth_add_popup_list1" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		WITH RECURSIVE 
+		T1 AS (
+		    SELECT 
+				CAST(AUTH_CD AS TEXT) AS AUTH_TREE,
+				AUTH_PARENT, 
+				AUTH_CD, 
+				AUTH_NAME, 
+				AUTH_TYPE,
+				(SELECT COUNT(*) FROM ${db.mainschema}.ADMIN_AUTH_MENU WHERE AUTH_PARENT = A.AUTH_CD) + 1 AS SCNT
+		    FROM ${db.mainschema}.ADMIN_AUTH_MENU a
+		    WHERE AUTH_PARENT = '0'
+		    UNION ALL
+		    SELECT 
+				CONCAT(AA.AUTH_TREE, '|', a.AUTH_CD) AS AUTH_TREE,
+				a.AUTH_PARENT, 
+				a.AUTH_CD, 
+				a.AUTH_NAME, 
+				a.AUTH_TYPE,
+				(SELECT COUNT(*) FROM ${db.mainschema}.ADMIN_AUTH_MENU WHERE AUTH_PARENT = a.AUTH_CD) + 1 AS SCNT
+		    FROM ${db.mainschema}.ADMIN_AUTH_MENU a
+		    JOIN T1 AA ON a.AUTH_PARENT = AA.AUTH_CD
+		)
+		SELECT 
+			'|' || A.AUTH_TREE || '|' AUTH_TREE, 
+			A.AUTH_PARENT, 
+			A.AUTH_CD, 
+			B.AUTH_CD AUTH_CD2,
+			A.AUTH_NAME, 
+			A.AUTH_TYPE,
+			B.GRADE,
+			A.SCNT
+		FROM T1 A
+		LEFT JOIN (SELECT AUTH_CD, GRADE FROM ${db.mainschema}.ADMIN_AUTH WHERE GRADE = 'DEV') B ON A.AUTH_CD = B.AUTH_CD
+		ORDER BY A.AUTH_CD::INTEGER
+		]]>
+	</select>
+	
+	<!-- 권한관리 권한정보를 얻어옴 -->
+	<select id="auth_add_popup_list2" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+			A.AUTH_PARENT, 
+			A.AUTH_CD, 
+			B.AUTH_CD AUTH_CD2, 
+			AUTH_NAME, 
+			AUTH_NAME_DESC, 
+			AUTH_TYPE, 
+			MASKING_FLAG, 
+			COALESCE((SELECT 'Y' FROM ${db.mainschema}.ADMIN_AUTH_MASKING WHERE AUTH_CD = A.AUTH_CD AND GRADE = #{no}), 'N') MASKING_FLAG2 
+		FROM(
+			SELECT *
+			FROM ${db.mainschema}.ADMIN_AUTH_MENU_SUB
+			WHERE AUTH_TYPE IN ('MENU', 'EXCEL', 'ETC', 'LINK', 'B2C_MENU')
+		) A
+		LEFT JOIN (
+			SELECT AUTH_CD, GRADE
+			FROM ${db.mainschema}.ADMIN_AUTH
+			WHERE GRADE = #{no}
+		) B ON A.AUTH_CD = B.AUTH_CD
+		WHERE 1 = 1
+		ORDER BY AUTH_SORT ASC
+		]]>
+	</select>
+	
+	<!-- 권한 등록/수정/삭제 -->
+	<select id="auth_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_AUTH(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{grade,mode=IN,jdbcType=VARCHAR},
+		#{gradeName,mode=IN,jdbcType=VARCHAR},
+		#{authCd,mode=IN,jdbcType=CLOB},
+		#{authCdMasking,mode=IN,jdbcType=CLOB},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_SERVER_NAME,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

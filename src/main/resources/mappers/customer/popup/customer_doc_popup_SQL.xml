@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_doc_popup">
+	<select id="customer_doc_popup_list" parameterType="map" resultType="egovMap">
+		SELECT DOC_FILE,
+				SEQ,
+				DOC_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_DETAIL', 'DOC_GUBUN', DOC_GUBUN) DOC_GUBUN_NM,
+				FAX_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'FAX_GUBUN', FAX_GUBUN) FAX_GUBUN_NM,
+				TO_CHAR(ENTER_DATE, 'YYYY-MM-DD') ENTER_DATE_YYYYMMDD,
+				ENTER_DATE,
+				TO_CHAR(CHK_DATE, 'YYYY-MM-DD HH24:MI') CHK_DATE_YYYYMMDD,
+				ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+				TELCO,
+				CHK_FLAG,
+				(CASE WHEN CHK_FLAG IS NULL THEN '미처리' ELSE ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DOC', 'CHK_FLAG', CHK_FLAG) END) CHK_FLAG_NM, 
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', CHK_ADMIN) CHK_ADMIN_NM,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) SERVICE_NUMBER2,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('CTZ_CORP_NUM_TYPE', 'ALL', SERVICE_ACCOUNT) CTZ_CORP_NUM_TYPE
+		FROM ${db.mainschema}.CUSTOMER_DOC A
+		WHERE USABLE = 'U'
+				AND SERVICE_ACCOUNT = #{account}
+		ORDER BY ENTER_DATE DESC
+	</select>
+	
+	<select id="customer_doc_popup_doc_file" parameterType="map" resultType="egovMap">
+		SELECT SEQ,
+				TELCO,
+				DOC_FILE,
+				ORG_FILE_NM,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', A.TELCO, SERVICE_ACCOUNT) SERVICE_TYPE,
+				DOC_GUBUN
+		FROM ${db.mainschema}.CUSTOMER_DOC A
+		WHERE SEQ = #{seq}
+			AND USABLE = 'U'
+	</select>
+	
+	<select id="customer_doc_popup_doc_del_chk" parameterType="map" resultType="egovMap">
+		SELECT COUNT(*) CNT
+		FROM ${db.mainschema}.CUSTOMER_DOC
+		WHERE DOC_FILE = #{doc_file} OR ORG_FILE_NM = #{doc_file}
+			AND USABLE = 'U'
+	</select>
+</mapper>

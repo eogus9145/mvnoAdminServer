@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_stay_expire_popup">
+	<select id="_customer_stay_expire_popup_info" parameterType="map" resultType="egovMap">
+		<if test='page_telco == "LGT"'>
+			SELECT TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT ,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CINDTIND', CINDTIND) CTZ_CORP_NUM_TYPE_NM,
+				   STAY_QUALF_CD,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'STAY_QUALF_CD', STAY_QUALF_CD) STAY_QUALF_CD_NM
+			FROM ${db.mainschema}.CUSTOMER_LGT A, ${db.mainschema}.LGT_SUB B, ${db.mainschema}.LGT_CUS C
+			WHERE A.SERVICE_ACCOUNT = #{account}
+			AND A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			AND B.CUSTOMER_ID = C.CUSTOMER_ID
+		</if>
+		<if test='page_telco == "SKT"'>
+			SELECT TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT ,
+				   F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CTZ_CORP_NUM_TYPE', CTZ_CORP_NUM_TYPE) CTZ_CORP_NUM_TYPE_NM,
+				   STAY_QUALF_CD,
+				   F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'STAY_QUALF_CD', STAY_QUALF_CD) STAY_QUALF_CD_NM
+			FROM SKT_CUSTOMER A
+			WHERE A.SERVICE_ACCOUNT = #{account}
+		</if>
+	</select>
+	
+	<select id="_customer_stay_expire_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_STAY_EXPIRE(
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{stay_qualf_cd,mode=IN,jdbcType=VARCHAR},
+		#{stay_expir_dt,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

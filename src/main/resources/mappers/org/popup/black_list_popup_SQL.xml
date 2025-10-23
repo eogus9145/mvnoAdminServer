@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include.black_list_popup">
+	<sql id="black_list_popup">
+	<![CDATA[
+			SELECT /*+ index_desc(a CUSTOMER_BLACK_IDX3)*/
+			   	SEQ, 
+				SERVICE_ACCOUNT, 
+				BLACK_CD, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'BLACK_CD', BLACK_CD) BLACK_CD_NM, 
+				STATUS, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'STATUS', STATUS) STATUS_NM, 
+				OPEN_FLAG, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'OPEN_FLAG', OPEN_FLAG) OPEN_FLAG_NM, 
+				REFUND_YN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'REFUND_YN', REFUND_YN) REFUND_YN_NM, 
+				CALL_YN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'CALL_YN', CALL_YN) CALL_YN_NM, 
+				TO_CHAR(ENTER_DT, 'YYYY-MM-DD HH24:MI:SS') ENTER_DT, 
+				DESC_INFO
+			FROM ${db.mainschema}.CUSTOMER_BLACK A
+			WHERE STATUS IN ('A')
+			 		AND SERVICE_ACCOUNT = #{account}
+		]]>
+
+	</sql>
+	<select id="black_list_popup" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ, 
+			fq.SERVICE_ACCOUNT, 
+			fq.BLACK_CD, 
+			fq.BLACK_CD_NM, 
+			fq.STATUS, 
+			fq.STATUS_NM, 
+			fq.OPEN_FLAG, 
+			fq.OPEN_FLAG_NM, 
+			fq.REFUND_YN, 
+			fq.REFUND_YN_NM, 
+			fq.CALL_YN, 
+			fq.CALL_YN_NM, 
+			fq.ENTER_DT, 
+			fq.DESC_INFO
+        FROM (
+	]]>
+		<include refid="black_list_popup" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.ENTER_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="black_list_popup_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="black_list_popup" /><![CDATA[
+            )
+	]]>
+	</select>
+	<select id="black_list_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+				SELECT SERVICE_ACCOUNT,
+						TELCO,
+				       CUSTOMER_NAME,
+				       ${db.mainschema}.AES256LOCALDEC(CUSTOMER_SSN) CUSTOMER_SSN,
+				       BLACK_CD, 
+				       STATUS, 
+				       OPEN_FLAG, 
+				       REFUND_YN, 
+				       CALL_YN, 
+				       DESC_INFO
+				FROM ${db.mainschema}.CUSTOMER_BLACK
+				WHERE STATUS IN ('A')
+					  AND SEQ = CAST(#{seq} AS BIGINT)
+		]]>
+	</select>
+	
+	<select id="black_list_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_CUSTOMER_BLACK(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{refund_yn,mode=IN,jdbcType=VARCHAR},
+		#{open_flag,mode=IN,jdbcType=VARCHAR},
+		#{call_yn,mode=IN,jdbcType=VARCHAR},
+		#{black_cd,mode=IN,jdbcType=VARCHAR},
+		#{desc_info,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+		
+	</select>
+	
+</mapper>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_doc_popup">
+	<select id="police_doc_popup_list" parameterType="map" resultType="egovMap">
+		SELECT /*+ INDEX_DESC(A POLICE_DOC_PK) */
+				SEQ,
+				DOC_FILE,
+				REG_ADMIN,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+				TO_CHAR(REG_DT, 'YYYY-MM-DD') REG_DT
+		FROM ${db.mainschema}.POLICE_DOC A
+		WHERE USABLE = 'U'
+				AND POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+	</select>
+	
+	<select id="police_doc_popup_doc_file" parameterType="map" resultType="egovMap">
+		SELECT 
+			SEQ,
+			DOC_FILE
+		FROM ${db.mainschema}.POLICE_DOC A
+		WHERE SEQ = CAST(#{seq} AS BIGINT)
+			AND USABLE = 'U'
+	</select>
+	
+	<select id="police_doc_popup_doc_del_chk" parameterType="map" resultType="egovMap">
+		SELECT COUNT(*) CNT
+		FROM ${db.mainschema}.POLICE_DOC
+		WHERE DOC_FILE = #{doc_file}
+			AND USABLE = 'U'
+	</select>
+</mapper>

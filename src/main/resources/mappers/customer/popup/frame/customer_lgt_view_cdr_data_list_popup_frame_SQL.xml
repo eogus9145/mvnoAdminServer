@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_cdr_data_list_popup_frame">
+	<sql id="customer_lgt_view_cdr_data_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_CDR_DATA_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)}_IDX3) */
+			   SERVICE_ACCOUNT,
+				TO_CHAR(ACCESS_DT, 'YYYY-MM-DD') ACCESS_DT,
+				TO_CHAR(START_TIME, 'HH24:MI:SS') START_TIME,
+				TO_CHAR(END_TIME, 'HH24:MI:SS') END_TIME,
+				PKT,
+				TRUNC(PKT / 1024 / 1024, 2) MPKT,
+				CHARGE,
+				REMAINS,
+				CALL_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CDR_DATA', 'CALL_GUBUN', CALL_GUBUN) CALL_GUBUN_NAME,
+				AGENT_ID,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_ID_NM
+		 FROM ${db.mainschema}.LGT_CDR_DATA_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)} A
+		 WHERE ACCESS_DT > TO_DATE('2010-01-01','YYYY-MM-DD')
+				AND ACCESS_DT <= NOW()
+				AND SERVICE_ACCOUNT = #{account}
+		 
+			]]>
+		
+			${@telecentro.common.service.CommonUtil@get_section_query("ACCESS_DT", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="customer_lgt_view_cdr_data_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_cdr_data_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SERVICE_ACCOUNT,
+			fq.ACCESS_DT,
+			fq.START_TIME,
+			fq.END_TIME,
+			fq.PKT,
+			fq.MPKT,
+			fq.CHARGE,
+			fq.REMAINS,
+			fq.CALL_GUBUN,
+			fq.CALL_GUBUN_NAME,
+			fq.AGENT_ID,
+			fq.AGENT_ID_NM
+	]]>
+		<include refid="customer_lgt_view_cdr_data_list_popup_frame_add" />
+	<![CDATA[
+        FROM 
+        (
+	]]>
+		<include refid="customer_lgt_view_cdr_data_list_popup_frame" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.ACCESS_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_cdr_data_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_cdr_data_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_cdr_data_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_cdr_data_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_cdr_data_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.soc_va_list">
+	<sql id="soc_va_list">
+		SELECT 
+			TELCO,
+			PROD_CD,
+			SERVICE_TYPE,
+			(CASE WHEN SERVICE_TYPE = 'VAS' THEN '부가서비스' WHEN SERVICE_TYPE = 'VA' THEN '부가요금제' ELSE SERVICE_TYPE END) SERVICE_TYPE_NM,
+			SERVICE_NAME,
+			BASIC_FEE,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI') RECORD_DATE,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			REMARK
+		FROM ${db.mainschema}.CODE_SERVICE_INFO A 
+		WHERE SERVICE_TYPE LIKE 'VA%'
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'prod_cd'">
+					    AND (PROD_CD LIKE '%' || #{sword} || '%' OR SERVICE_NAME LIKE '%' || #{sword} || '%')
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		
+		<if test="service_type != '' and service_type != null ">
+	   	    AND SERVICE_TYPE = #{service_type}
+   	    </if>
+		<if test="telco != '' and telco != null ">
+	   	    AND TELCO = #{telco}
+   	    </if>
+		
+	</sql>
+	<sql id="soc_va_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="soc_va_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="soc_va_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.TELCO,
+			fq.PROD_CD,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.SERVICE_NAME,
+			fq.BASIC_FEE,
+			fq.RECORD_DATE,
+			fq.ADMIN_NM,
+			fq.REMARK
+	]]>
+		<include refid="soc_va_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="soc_va_list" />
+		ORDER BY A.RECORD_DATE DESC, A.PROD_CD
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="soc_va_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="soc_va_list_add" /><![CDATA[
+	            ]]><include refid="soc_va_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="soc_va_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="soc_va_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="soc_va_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

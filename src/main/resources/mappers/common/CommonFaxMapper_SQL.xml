@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.common.commonFaxMapper">
+
+	<select id="P_FAX" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_FAX(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{fax_seq,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{doc_file,mode=IN,jdbcType=VARCHAR},
+		#{org_doc_file,mode=IN,jdbcType=VARCHAR},
+		#{doc_gubun,mode=IN,jdbcType=VARCHAR},
+		#{mask_yn,mode=IN,jdbcType=VARCHAR},
+		#{req_type,mode=IN,jdbcType=VARCHAR},
+		#{agent_id,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{fax_gubun,mode=IN,jdbcType=VARCHAR},
+		#{part_gubun,mode=IN,jdbcType=VARCHAR},
+		#{ing_code,mode=IN,jdbcType=VARCHAR},
+		#{ing_reason,mode=IN,jdbcType=VARCHAR},
+		#{agent_memo,mode=IN,jdbcType=VARCHAR},
+		#{fax_memo1,mode=IN,jdbcType=VARCHAR},
+		#{fax_memo2,mode=IN,jdbcType=VARCHAR},
+		#{fax_note,mode=IN,jdbcType=VARCHAR},
+		#{fax_del_code,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{custmgmtno,mode=IN,jdbcType=VARCHAR},
+		#{tel_admin_id,mode=IN,jdbcType=VARCHAR},
+		#{mb_gubun,mode=IN,jdbcType=VARCHAR},
+		#{bonsa_chk,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=VARCHAR},
+		#{o_doc_file,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="conn_curl_fax_daemon_ip" parameterType="map" resultType="egovMap">
+		SELECT ${db.mainschema}.F_GET_FAX_DAEMON_IP() DAEMON_IP
+	</select>
+
+</mapper>

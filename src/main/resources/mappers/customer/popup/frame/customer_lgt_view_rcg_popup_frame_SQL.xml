@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_rcg_popup_frame">
+	<select id="customer_lgt_view_rcg_popup_frame_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT SERVICE_CODE,
+	  		   (SELECT 'Y' FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.SERVICE_CODE LIMIT 1) TOPUP_FLAG,
+	  		   (SELECT RCG_AMT FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.SERVICE_CODE LIMIT 1) TOPUP_AMT
+		FROM ${db.mainschema}.CUSTOMER_LGT A,
+			 ${db.mainschema}.LGT_SUB B
+		WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+		AND A.SERVICE_ACCOUNT = #{account}
+		]]>
+	</select>
+	
+</mapper>

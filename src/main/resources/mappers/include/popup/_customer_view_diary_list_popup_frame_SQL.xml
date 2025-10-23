@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_view_diary_list_popup_frame">
+	<sql id="_customer_view_diary_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A CUSTOMER_DRY_IDX1) */
+			SERVICE_ACCOUNT,
+			SERVICE_NUMBER, 
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', #{page_telco}, #{account}) NO_MASK_SERVICE_NUMBER,
+			REQ_TYPE1, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_TYPE1', REQ_TYPE1) REQ_TYPE1_NM,
+			REQ_GUBUN, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_GUBUN', REQ_GUBUN) REQ_GUBUN_NM,
+			REQ_TYPE2, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_TYPE2', REQ_TYPE2) REQ_TYPE2_NM,
+			RES_STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'RES_STATUS', RES_STATUS) RES_STATUS_NM,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+			DIARY_ID,
+			REQ_BODY, 
+			RES_BODY, 
+			REQ_USER_NAME,
+			REQ_USER_GUBUN, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_USER_GUBUN', REQ_USER_GUBUN) REQ_USER_GUBUN_NM,
+			STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'STATUS', STATUS) STATUS_NM,
+			REG_ADMIN, 
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+			TO_CHAR(RES_END_DATE, 'YYYY-MM-DD HH24:MI') RES_END_DATE
+		 FROM ${db.mainschema}.CUSTOMER_DRY A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+			   AND TELCO = #{page_telco}
+			]]>
+			
+			
+		${@telecentro.common.service.CommonUtil@get_section_query("REG_DATE", null, s_dt, e_dt, "Y", null)}	
+		
+	</sql>
+	<sql id="_customer_view_diary_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="_customer_view_diary_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER, 
+			fq.NO_MASK_SERVICE_NUMBER,
+			fq.REQ_TYPE1, 
+			fq.REQ_TYPE1_NM,
+			fq.REQ_GUBUN, 
+			fq.REQ_GUBUN_NM,
+			fq.REQ_TYPE2, 
+			fq.REQ_TYPE2_NM,
+			fq.RES_STATUS,
+			fq.RES_STATUS_NM,
+			fq.REG_DATE,
+			fq.DIARY_ID,
+			fq.REQ_BODY, 
+			fq.RES_BODY, 
+			fq.REQ_USER_NAME,
+			fq.REQ_USER_GUBUN, 
+			fq.REQ_USER_GUBUN_NM,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.REG_ADMIN, 
+			fq.REG_ADMIN_NM,
+			fq.RES_END_DATE
+	]]>
+		<include refid="_customer_view_diary_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="_customer_view_diary_list_popup_frame" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.REG_DATE DESC, A.TELCO DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="_customer_view_diary_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="_customer_view_diary_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_feature_list_popup_frame">
+
+	<sql id="customer_skt_view_feature_list_popup_frame">
+	<![CDATA[
+		SELECT 
+			SV_ACNT_ST_CHG_NM,
+		    CHG_DTM,
+		    (CASE WHEN SETNULL(VA_CD) IS NULL THEN '부가서비스' ELSE '부가요금제' END) GUBUN,
+		    (CASE WHEN SETNULL(VA_CD) IS NULL THEN VAS_CD ELSE VA_CD END) CD,
+		    (CASE WHEN SETNULL(VA_CD) IS NULL THEN VAS_NM ELSE VA_NM END) NM,
+		    PROD_FEE_AMT,
+			PROD_DPRD,
+		    RECORD_DATE
+		FROM(
+			SELECT 
+			    SV_ACNT_ST_CHG_NM,
+			    TO_CHAR(TO_DATE(A.CHG_DTM, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') CHG_DTM,
+			    '' VA_CD,
+			    '' VA_NM,
+			    A.VAS_CD,
+			    A.VAS_NM,
+			    PROD_FEE_AMT,
+			    PROD_DPRD,
+			    TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI:SS') RECORD_DATE
+			FROM SKT_FEATURE A,
+			    (
+			        SELECT SV_ACNT_NUM, VAS_CD, MAX(CHG_DTM) CHG_DTM
+			        FROM SKT_FEATURE
+			        WHERE SETNULL(VAS_CD) IS NOT NULL
+			              AND SV_ACNT_NUM = #{account}
+			        GROUP BY SV_ACNT_NUM, VAS_CD
+			    ) B
+			WHERE A.SV_ACNT_NUM = B.SV_ACNT_NUM
+			      AND A.VAS_CD = B.VAS_CD
+			      AND A.CHG_DTM = B.CHG_DTM
+			      AND A.SV_ACNT_NUM = #{account}
+			      AND (SV_ACNT_ST_CHG_NM LIKE '%가입' OR SV_ACNT_ST_CHG_NM LIKE '%변경')
+			UNION ALL
+			SELECT 
+			    SV_ACNT_ST_CHG_NM,
+			    TO_CHAR(TO_DATE(A.CHG_DTM, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') CHG_DTM,
+			    A.VA_CD,
+			    A.VA_NM,
+			    '' VAS_CD,
+			    '' VAS_NM,
+			    PROD_FEE_AMT,
+				PROD_DPRD,
+			    TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI:SS') RECORD_DATE
+			FROM SKT_FEATURE A,
+				(
+					SELECT SV_ACNT_NUM, VA_CD, MAX(CHG_DTM) CHG_DTM
+					FROM SKT_FEATURE
+					WHERE SETNULL(VA_CD) IS NOT NULL
+						  AND SV_ACNT_NUM = #{account}
+					GROUP BY SV_ACNT_NUM, VA_CD
+				) B
+			WHERE A.SV_ACNT_NUM = B.SV_ACNT_NUM
+				  AND A.VA_CD = B.VA_CD
+				  AND A.CHG_DTM = B.CHG_DTM
+				  AND A.SV_ACNT_NUM = #{account}
+				  AND (SV_ACNT_ST_CHG_NM LIKE '%가입' OR SV_ACNT_ST_CHG_NM LIKE '%변경')
+		) A	
+		]]>
+		
+	</sql>
+	
+	<sql id="customer_skt_view_feature_list_popup_frame_add">
+	<![CDATA[
+	]]>
+	</sql>
+	
+	<select id="customer_skt_view_feature_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+		    fq.SV_ACNT_ST_CHG_NM,
+            fq.CHG_DTM,
+            fq.GUBUN,
+		    fq.CD,
+		    fq.NM,
+		    fq.PROD_FEE_AMT,
+			fq.PROD_DPRD,
+            fq.RECORD_DATE
+	]]>
+			<include refid="customer_skt_view_feature_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="customer_skt_view_feature_list_popup_frame" />
+			ORDER BY A.CHG_DTM DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_view_feature_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_view_feature_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

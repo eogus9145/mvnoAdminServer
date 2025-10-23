@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_rcg_popup_frame">
+	<select id="customer_skt_view_rcg_popup_frame_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT PROD_CD SERVICE_CODE,
+	  		   (SELECT 'Y' FROM CODE_SERVICE_BAND WHERE PROD_CD = B.PROD_CD LIMIT 1) TOPUP_FLAG
+		FROM CUSTOMER_SKT A, SKT_CUSTOMER B
+		WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+		AND A.SERVICE_ACCOUNT = #{account}
+		]]>
+	</select>
+	
+</mapper>

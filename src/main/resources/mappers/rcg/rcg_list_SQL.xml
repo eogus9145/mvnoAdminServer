@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_list">
+	<sql id="rcg_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A RECHARGE_IDX1) */
+		   A.RCG_SEQ, 
+		   TO_CHAR(A.RCG_DATE, 'YY/MM/DD HH24:MI') RCG_DATE,
+		   TO_CHAR(A.RCG_DATE, 'YYYYMMDD') RCG_DATE_LIMIT, 
+		   A.SERVICE_ACCOUNT, 
+		   SERVICE_NUMBER, 
+		   A.TELCO, 
+		   REQ_SRC, 
+		   CHG_TYPE, 
+		   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'CHG_TYPE', CHG_TYPE) CHG_TYPE_NM, 
+		   REQ_TYPE, 
+		   RES_CD, 
+		   RES_MSG, 
+		   RCG_NUMBER, 
+		   RCG_RSN, 
+		   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'RCG_RSN', RCG_RSN) RCG_RSN_NM,
+		   AMOUNT, 
+		   DATA_CD, 
+		   CANCEL_FLAG, 
+		   (CASE WHEN CANCEL_FLAG = 'Y' THEN TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') ELSE '' END) CANCEL_DT, 
+		   (CASE WHEN CANCEL_FLAG = 'Y' THEN ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', CANCEL_ADMIN) ELSE '' END)  CANCEL_ADMIN_NAME,
+		   BALANCE, 
+		   RCG_METHOD, 
+		   A.AGENT_ID, 
+		   ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', A.ADMIN_ID) ADMIN_NM,
+		   A.RCG_INFO, 
+		   A.RCG_AGENT, 
+		   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.AGENT_ID) AGENT_NAME,
+		   ${db.mainschema}.F_GET_RCG_GUBUN_INFO('CANCEL_USABLE', REQ_TYPE) CANCEL_USABLE_YN,
+		   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.RCG_AGENT) RECHARGE_AGENT_NAME,
+		   A.REMARK,
+		   IN_AMOUNT,
+		   REFUND_SEQ,
+		   (CASE WHEN A.FREE_FLAG = 'Y' THEN '무료' WHEN A.FREE_FLAG = 'N' THEN '유료' END) FREE_FLAG,
+		   STATUS,
+		   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'STATUS', STATUS) STATUS_NM,
+		   AGENT_CHARGE,
+		   PROD_CD,
+		   TO_CHAR(BASIC_EXPIRE, 'YYYY-MM-DD') BASIC_EXPIRE,
+		   TO_CHAR(DATA_EXPIRE, 'YYYY-MM-DD') DATA_EXPIRE,
+		   TO_CHAR(TOPUP_E_DT, 'YYYY-MM-DD') TOPUP_E_DT
+		   ]]>
+		FROM ${db.mainschema}.RCG A 
+		WHERE A.RCG_DATE > TO_DATE('20150101', 'YYYYMMDD')
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND A.SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword}) OR A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', '010' || #{sword}))
+					</when>
+					<when test="sst == 'service_number_old'">
+						AND (A.SERVICE_NUMBER = #{sword} OR A.SERVICE_NUMBER = '010' || #{sword})
+					</when>
+					<when test="sst == 'recharge_number'">
+					  	AND A.RCG_NUMBER = #{sword}
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>
+		
+		${@telecentro.common.service.CommonUtil@get_multi_select_query("RCG_METHOD", rcg_method)}
+		
+		<if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    
+   	    <if test="chg_type != '' and chg_type != null ">
+	   	    AND CHG_TYPE = #{chg_type}
+   	    </if>
+   	    
+   	    <if test="req_src != '' and req_src != null ">
+	   	    AND REQ_SRC = #{req_src}
+   	    </if>
+   	    
+   	    <if test="telco != '' and telco != null ">
+	   	    AND A.TELCO = #{telco}
+   	    </if>
+   	    
+   	    <choose>
+			<when test='cancel_flag == "Y"'>
+			  	AND CANCEL_FLAG = 'Y'
+			</when>
+			<when test='cancel_flag == "N"'>
+			  	AND CANCEL_FLAG = 'N'
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		
+		<choose>
+			<when test="agent_id == 'NONE'">
+			  	AND AGENT_ID IS NULL
+			</when>
+			<when test="agent_id != '' and agent_id != null">
+			  	AND (AGENT_ID in (SELECT AGENT_ID FROM ${db.mainschema}.AGENT WHERE AGENT_TYPE IN ('D', 'M') AND AGENT_ID = #{agent_id} OR HIGH_AGENT = #{agent_id}) )
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		
+		<if test="recharge_agent_id != '' and recharge_agent_id != null ">
+	   	    AND (RCG_AGENT in (SELECT AGENT_ID FROM ${db.mainschema}.AGENT WHERE AGENT_TYPE IN ('D', 'M') AND AGENT_ID = #{recharge_agent_id} OR HIGH_AGENT = #{recharge_agent_id}) )
+   	    </if>
+   	    
+   	    <choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("A.RCG_DATE", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				A.SERVICE_ACCOUNT = '99999999999999999999';
+			</otherwise>
+		</choose>
+			
+	</sql>
+	<sql id="rcg_list_add">
+	<![CDATA[
+		, ${db.mainschema}.F_GET_SERVICE_CD_NM(PROD_CD) PROD_CD_NM
+		, (SELECT RETRY_USABLE FROM ${db.mainschema}.CD_RCG_GUBUN WHERE REQ_GUBUN = fq.REQ_TYPE) RETRY_USABLE
+		, (
+			CASE 
+				WHEN STATUS = '2' AND TELCO = 'KT' THEN (CASE WHEN CHG_TYPE = 'V' THEN BASIC_EXPIRE WHEN CHG_TYPE = 'D' THEN DATA_EXPIRE WHEN CHG_TYPE = 'L' THEN  BASIC_EXPIRE ELSE '' END)
+				WHEN STATUS = '2' THEN (CASE WHEN CHG_TYPE = 'V' THEN BASIC_EXPIRE WHEN CHG_TYPE = 'D' THEN DATA_EXPIRE WHEN CHG_TYPE = 'L' THEN TOPUP_E_DT ELSE '' END)
+				ELSE ''
+			END
+		) BASIC_EXPIRE_STR
+	]]>
+	</sql>
+	<sql id="rcg_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="rcg_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.RCG_SEQ, 
+			fq.RCG_DATE,
+			fq.RCG_DATE_LIMIT, 
+			fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER, 
+			fq.TELCO, 
+			fq.REQ_SRC, 
+			fq.CHG_TYPE, 
+			fq.CHG_TYPE_NM, 
+			fq.REQ_TYPE, 
+			fq.RES_CD, 
+			fq.RES_MSG, 
+			fq.RCG_NUMBER, 
+			fq.RCG_RSN, 
+			fq.RCG_RSN_NM,
+			fq.AMOUNT, 
+			fq.DATA_CD, 
+			fq.CANCEL_FLAG, 
+			fq.CANCEL_DT, 
+			fq.CANCEL_ADMIN_NAME,
+			fq.BALANCE, 
+			fq.RCG_METHOD, 
+			fq.AGENT_ID,
+			fq.ADMIN_NM,
+			fq.RCG_INFO, 
+			fq.RCG_AGENT, 
+			fq.AGENT_NAME,
+			fq.CANCEL_USABLE_YN,
+			fq.RECHARGE_AGENT_NAME,
+			fq.REMARK,
+			fq.IN_AMOUNT,
+			fq.REFUND_SEQ,
+			fq.FREE_FLAG,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.AGENT_CHARGE,
+			fq.PROD_CD,
+			fq.BASIC_EXPIRE,
+			fq.DATA_EXPIRE,
+			fq.TOPUP_E_DT
+	]]>
+		<include refid="rcg_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="rcg_list" />
+		ORDER BY A.RCG_DATE DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="rcg_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="rcg_list_add" /><![CDATA[
+	            ]]><include refid="rcg_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="rcg_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="rcg_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="rcg_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

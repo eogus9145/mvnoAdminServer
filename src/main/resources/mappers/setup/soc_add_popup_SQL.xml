@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.soc_add_popup">
+	
+	<!-- 요금제관리 정보조회 -->
+	<select id="soc_add_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 	
+			TELCO,
+			PROD_CD,
+			SERVICE_TYPE,
+			SERVICE_NAME,
+			GROUP_CD,
+			BASIC_FEE,
+			REMARK
+		FROM ${db.mainschema}.CODE_SERVICE_INFO A
+		WHERE TELCO = #{telco}
+				AND PROD_CD = #{prodCd}
+		]]>
+	</select>
+	
+	<!-- 요금제관리 등록/수정/삭제 -->
+	<select id="soc_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_SERVICE_INFO(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{oldTelco,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{prodCd,mode=IN,jdbcType=VARCHAR},
+		#{serviceName,mode=IN,jdbcType=VARCHAR},
+		#{serviceType,mode=IN,jdbcType=VARCHAR},
+		#{groupCd,mode=IN,jdbcType=VARCHAR},
+		#{basicFee,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

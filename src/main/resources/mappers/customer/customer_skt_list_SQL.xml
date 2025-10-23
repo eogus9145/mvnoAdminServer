@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_list">
+	<sql id="customer_skt_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A SKT_CUSTOMER_IDX1) ORDERED USE_NL(B) */
+			A.SERVICE_ACCOUNT,
+			F_FORMAT_PH(A.SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+			A.PROD_CD,
+			NVL(F_GET_SERVICE_CD_NM(A.PROD_CD), A.PROD_CD) PROD_CD_NM,
+			BAND_CD,
+			NVL((SELECT BAND_NM FROM CODE_SERVICE_BAND WHERE BAND_CD = B.BAND_CD), '') BAND_CD_NM,
+			A.CUST_FRST_NM CUSTOMER_NAME,
+			A.CUST_TYP_CD CUSTOMER_TYPE,
+			CTZ_CORP_NUM_TYPE,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CTZ_CORP_NUM_TYPE', A.CTZ_CORP_NUM_TYPE) CTZ_CORP_NUM_TYPE_NM,
+			AES256LOCALDEC(ENC_CTZ_CORP_NUM) ENC_CTZ_CORP_NUM,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CUST_TYP_CD', A.CUST_TYP_CD) CUSTOMER_TYPE_NM,
+			B.STATUS,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STATUS', B.STATUS) STATUS_NM,
+			TO_CHAR(OPEN_DATE, 'YYYY-MM-DD HH24:MI:SS') OPEN_DATE,
+			OPEN_DATE OPEN_DATE_DT,
+			A.STAY_QUALF_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'STAY_QUALF_CD', STAY_QUALF_CD) STAY_QUALF_CD_NM,
+			A.STAY_EXPIR_DT,
+			TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIRE_STR,
+			A.NAT_CD NATIONALITY,
+			CASE WHEN A.NAT_CD IS NULL THEN '미등록' ELSE F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'NAT_CD', A.NAT_CD ) END AS NATIONALITY_NM,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'EQP_MDL_CD', EQP_MDL_CD) EQP_MDL_NM,
+			A.EQP_SER_NUM,
+			A.USIM_SER_NUM USIM_SN,
+			A.USIM_MDL_CD,
+			B.DEALER_ID,
+			B.AGENT_ID,
+			NVL(F_GET_AGENT_INFO('AGENT_NAME', B.AGENT_ID),'미등록') AGENT_NAME,
+			BALANCE,
+			TO_CHAR(BASIC_EXPIRE, 'YYYY-MM-DD') BASIC_EXPIRE,
+			B.STOP_CL_CD,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STOP_CL_CD', B.STOP_CL_CD) STOP_CL_CD_NM,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STOP_RSN_CD', B.STOP_RSN_CD) STOP_REASON,
+			TO_CHAR(B.STOP_DT, 'YY-MM-DD HH24:MI') STOP_DT,
+			TO_CHAR(CANCEL_DT, 'YY-MM-DD') CANCEL_DT,
+			NVL(F_GET_COMMON_CD_NM('CUSTOMER_SKT','CANCEL_RSN_CD',B.CANCEL_RSN_CD), '-') CANCEL_REASON_NM,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT','CANCEL_CHG_CD',B.CANCEL_CHG_CD) CANCEL_GUBUN_NM,
+			A.SERVICE_TYPE,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SCRB_REQ_RSN_CD', A.SCRB_REQ_RSN_CD) OPEN_REASON,
+			CMS_TRY_REMAINS,
+			NVL(F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'LANG', LANG),'미등록') LANG_NM,
+			NAT_CD,
+			VA_NM,
+			DATA_SVC_FLAG,
+			DATA_SVC_ID,
+			TOTAL_CHG,
+			AGRMT_MTH_CNT,
+			ALLOT_MTH_CNT,
+			A.POST_ORG_CD,
+			A.TERM_ORG_CD,
+			ZIP,
+			(ADDR_INFO1 || ' ' || ADDR_INFO2) AS ADDR_INFO,
+			BILL_ISUE_TYP_CD,
+			BANK_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'BANK_CD', A.BANK_CD) BANK_CD_NM,
+			CARD_CO_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CARD_CO_CD', A.CARD_CO_CD) CARD_CO_CD_NM,
+			CASE WHEN SUBSTR(A.AGREE_YN, 1, 1) = '1' THEN 'Y' ELSE 'N' END AS SMS_AGREE_FLAG,
+			CASE WHEN SUBSTR(A.AGREE_YN, 2, 1) = '1' THEN 'Y' ELSE 'N' END AS PRIVACY_AGREE_FLAG,
+			CASE WHEN SUBSTR(A.AGREE_YN, 3, 1) = '1' THEN 'Y' ELSE 'N' END AS TM_AGREE_FLAG,
+			IMEI_NUM,
+			MEMO1,
+			MEMO2,
+			OPEN_POST_ORG_CD, 
+			OPEN_TERM_ORG_CD, 
+			OPEN_PROC_ID, 
+			NVL((SELECT '정액제' FROM CODE_SERVICE_BAND WHERE PROD_CD = A.PROD_CD LIMIT 1), '종량제') JONGBAND,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'PAY_MTHD_CD', PAY_MTHD_CD) PAY_MTHD_CD_NM,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'BNP_CO_CD', BNP_CO_CD) BNP_CO_CD_NM,
+			NVL((SELECT COUNT(*) FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND ENTER_DATE >= DATE_TRUNC('day', OPEN_DATE) AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT), 0) DOC_CNT
+		   ]]>
+		FROM SKT_CUSTOMER A,
+			 CUSTOMER_SKT B
+		WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+			  AND STATUS IN ('A', 'S')
+			  AND A.OPEN_DATE >= TO_DATE('20160101', 'YYYYMMDD')
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND A.SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (A.SERVICE_NUMBER = #{sword} OR A.SERVICE_NUMBER = '010' || #{sword})
+					</when>
+					<when test="sst == 'iccid'">
+						AND ICCID = #{sword}
+					</when>					
+					<when test="sst == 'cust_frst_nm'">
+					  	AND (CUST_FRST_NM = UPPER(#{sword}) OR CUST_FRST_NM = LOWER(#{sword}))
+					</when>
+					<when test="sst == 'imei_num'">
+						AND IMEI_NUM = #{sword}
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+				${@telecentro.common.service.CommonUtil@get_section_query("A.OPEN_DATE", null, s_dt, e_dt, "Y", null)}
+			</otherwise>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("A.STAY_EXPIR_DT", null, s_expir_dt, e_expir_dt, "Y", null)}
+		
+		
+		<if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    <if test="prod_cd != '' and prod_cd != null ">
+	   	    AND A.PROD_CD = #{prod_cd}
+   	    </if>
+   	    <if test="band_cd != '' and band_cd != null ">
+	   	    AND B.BAND_CD = #{band_cd}
+   	    </if>
+   	    <if test="nat_cd != '' and nat_cd != null ">
+	   	    AND NAT_CD = #{nat_cd}
+   	    </if>
+   	    <if test="service_type != '' and service_type != null ">
+	   	    AND A.SERVICE_TYPE = #{service_type}
+   	    </if>
+   	    <if test="cust_typ_cd != '' and cust_typ_cd != null ">
+	   	    AND A.CUST_TYP_CD = #{cust_typ_cd}
+   	    </if>
+   	    <if test="ctz_corp_num_type != '' and ctz_corp_num_type != null ">
+	   	    AND A.CTZ_CORP_NUM_TYPE = #{ctz_corp_num_type}
+   	    </if>
+   	    <choose>
+			<when test='doc_cnt == "Y"'>
+			  	AND A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day',A.OPEN_DATE) LIMIT 1)
+			</when>
+			<when test='doc_cnt == "N"'>
+			  	AND A.SERVICE_ACCOUNT NOT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day', A.OPEN_DATE) LIMIT 1)
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="agent_id == 'NONE'">
+			  	AND AGENT_ID IS NULL
+			</when>
+			<when test="agent_id != '' and agent_id != null">
+			  	AND AGENT_ID = #{agent_id}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>		
+			
+	</sql>
+	<sql id="customer_skt_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_skt_list_add_excel">
+	<![CDATA[
+		, fq.PROD_CD
+	]]>
+	</sql>
+	<select id="customer_skt_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.PROD_CD,
+			fq.PROD_CD_NM,
+			fq.BAND_CD,
+			fq.BAND_CD_NM,
+			fq.CUSTOMER_NAME,
+			fq.CUSTOMER_TYPE,
+			fq.CTZ_CORP_NUM_TYPE,
+			fq.CTZ_CORP_NUM_TYPE_NM,
+			fq.ENC_CTZ_CORP_NUM,
+			fq.CUSTOMER_TYPE_NM,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.OPEN_DATE,
+			fq.OPEN_DATE_DT,
+			fq.STAY_QUALF_CD,
+			fq.STAY_QUALF_CD_NM,
+			fq.STAY_EXPIR_DT,
+			fq.STAY_EXPIRE_STR,
+			fq.NATIONALITY,
+			fq.NATIONALITY_NM,
+			fq.EQP_MDL_NM,
+			fq.EQP_SER_NUM,
+			fq.USIM_SN,
+			fq.USIM_MDL_CD,
+			fq.DEALER_ID,
+			fq.AGENT_ID,
+			fq.AGENT_NAME,
+			fq.BALANCE,
+			fq.BASIC_EXPIRE,
+			fq.STOP_CL_CD,
+			fq.STOP_CL_CD_NM,
+			fq.STOP_REASON,
+			fq.STOP_DT,
+			fq.CANCEL_DT,
+			fq.CANCEL_REASON_NM,
+			fq.CANCEL_GUBUN_NM,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.OPEN_REASON,
+			fq.CMS_TRY_REMAINS,
+			fq.LANG_NM,
+			fq.NAT_CD,
+			fq.VA_NM,
+			fq.DATA_SVC_FLAG,
+			fq.DATA_SVC_ID,
+			fq.TOTAL_CHG,
+			fq.AGRMT_MTH_CNT,
+			fq.ALLOT_MTH_CNT,
+			fq.POST_ORG_CD,
+			fq.TERM_ORG_CD,
+			fq.ZIP,
+			fq.ADDR_INFO,
+			fq.BILL_ISUE_TYP_CD,
+			fq.BANK_CD,
+			fq.BANK_CD_NM,
+			fq.CARD_CO_CD,
+			fq.CARD_CO_CD_NM,
+			fq.SMS_AGREE_FLAG,
+			fq.PRIVACY_AGREE_FLAG,
+			fq.TM_AGREE_FLAG,
+			fq.IMEI_NUM,
+			fq.MEMO1,
+			fq.MEMO2,
+			fq.OPEN_POST_ORG_CD, 
+			fq.OPEN_TERM_ORG_CD, 
+			fq.OPEN_PROC_ID, 
+			fq.JONGBAND,
+			fq.PAY_MTHD_CD_NM,
+			fq.BNP_CO_CD_NM,
+			fq.DOC_CNT
+	]]>
+		<include refid="customer_skt_list_add" />
+	<![CDATA[
+		FROM (
+	]]>
+		<include refid="customer_skt_list" />
+		ORDER BY A.OPEN_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_list_add" /><![CDATA[
+	            ]]><include refid="customer_skt_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

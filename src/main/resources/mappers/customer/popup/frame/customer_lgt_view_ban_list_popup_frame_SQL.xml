@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_ban_list_popup_frame">
+
+	<select id="customer_lgt_view_ban_list_popup_frame_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT BAN,
+					BILLMETHCD,
+					${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILLMETHCD', BILLMETHCD) BILLMETHCD_NM,
+					BILL_ISUE_TYP_CD,
+					${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILL_ISUE_TYP_CD', BILL_ISUE_TYP_CD) BILL_ISUE_TYP_CD_NM,
+					BADDRZIP,
+					BPRMADDRLN || ' ' || BSECADDRLN ADDR_INFO,
+					BILL_EMAIL_ADDR,
+					${db.mainschema}.AES256LOCALDEC(DPSTR_BIRTHDAY) DPSTR_BIRTHDAY,
+					BANK_NM,
+					${db.mainschema}.AES256LOCALDEC(BANK_NUM) BANK_NUM,
+					DPSTR_NM,
+					CARD_CO_NM,
+					CARDOWN_NM,
+					CARD_VALD_END_YYMM,
+					${db.mainschema}.AES256LOCALDEC(CARD_NUM) CARD_NUM,
+					COLDLNQIND,
+					${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'COLDLNQIND', COLDLNQIND) COLDLNQIND_NM,
+					${db.mainschema}.AES256LOCALDEC(BSSN) BSSN
+			FROM ${db.mainschema}.LGT_BAN A 
+			WHERE BAN = (SELECT BAN FROM ${db.mainschema}.LGT_SUB WHERE CONTRACT_NUM = #{account})
+		]]>
+	</select>
+</mapper>

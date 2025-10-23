@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_cdr_data_list_popup_frame">
+	<sql id="customer_skt_view_cdr_data_list_popup_frame">
+		<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_CDR_DATA_IDX1) */
+				TO_CHAR(ACCESS_DT, 'YYYY-MM-DD') ACCESS_DT,
+				PROD_ID,
+				SERVICE_ACCOUNT,
+				SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+				F_GET_SERVICE_CD_NM(PROD_ID) PROD_ID_NM,
+				CHARGE_CODE,
+				F_GET_COMMON_CD_NM('SKT_CDR_PO', 'CHARGE_CODE', CHARGE_CODE) CHARGE_CODE_NM,
+				TO_CHAR(START_TIME, 'HH24:MI:SS') START_TIME,
+				TO_CHAR(END_TIME, 'HH24:MI:SS') END_TIME,
+				AG_OCT_CNT,
+				TRUNC(AG_OCT_CNT/1024/1024, 2) AG_OCT_CNT_MBYTE,
+				TOTAL_RATED_CHARGE
+			 FROM SKT_CDR_DATA A
+			 WHERE SERVICE_ACCOUNT = #{account}
+			 AND TO_CHAR(ACCESS_DT, 'YYYY') = #{selectYear}
+		]]>
+			${@telecentro.common.service.CommonUtil@get_section_query("ACCESS_DT", null, s_dt, e_dt, "Y", null)}
+	</sql>
+	<sql id="customer_skt_view_cdr_data_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_skt_view_cdr_data_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.ACCESS_DT,
+			fq.PROD_ID,
+			fq.SERVICE_ACCOUNT,
+			fq.NO_MASK_SERVICE_NUMBER,
+			fq.PROD_ID_NM,
+			fq.CHARGE_CODE,
+			fq.CHARGE_CODE_NM,
+			fq.START_TIME,
+			fq.END_TIME,
+			fq.AG_OCT_CNT,
+			fq.AG_OCT_CNT_MBYTE,
+			fq.TOTAL_RATED_CHARGE
+	]]>
+		<include refid="customer_skt_view_cdr_data_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="customer_skt_view_cdr_data_list_popup_frame" />
+			ORDER BY A.SERVICE_ACCOUNT DESC, A.ACCESS_DT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_view_cdr_data_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_view_cdr_data_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_view_cdr_data_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_view_cdr_data_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_view_cdr_data_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

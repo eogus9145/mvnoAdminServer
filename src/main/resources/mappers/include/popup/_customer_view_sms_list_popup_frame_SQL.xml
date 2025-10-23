@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_view_sms_list_popup_frame">
+	<sql id="_customer_view_sms_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A SMS_DATE_IDX2) */
+			   TO_CHAR(SEND_DATE, 'YYYY-MM-DD HH24:MI') SEND_DATE,
+			   SMS_MSG,
+			   CALLED_NUMBER,
+			   RET_CD,
+			   COALESCE(RET_MSG, ${db.mainschema}.F_GET_COMMON_CD_NM('SMS', 'RET_CD', RET_CD)) RET_MSG,
+			   ADMIN_ID,
+			   COALESCE(${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID), ADMIN_ID) ADMIN_NM,
+			   SMS_GUBUN,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('SMS', 'SMS_GUBUN', SMS_GUBUN) SMS_GUBUN_NM
+		 FROM ${db.mainschema}.SMS A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+			   AND TELCO = #{page_telco}
+			   AND SEND_DATE >= TO_DATE('20150101', 'YYYYMMDD') 
+			]]>
+			
+		${@telecentro.common.service.CommonUtil@get_section_query("SEND_DATE", null, s_dt, e_dt, "Y", null)}
+		
+	</sql>
+	<sql id="_customer_view_sms_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="_customer_view_sms_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SEND_DATE,
+			fq.SMS_MSG,
+			fq.CALLED_NUMBER,
+			fq.RET_CD,
+			fq.RET_MSG,
+			fq.ADMIN_ID,
+			fq.ADMIN_NM,
+			fq.SMS_GUBUN,
+			fq.SMS_GUBUN_NM
+	]]>
+		<include refid="_customer_view_sms_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="_customer_view_sms_list_popup_frame" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.SEND_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="_customer_view_sms_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="_customer_view_sms_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

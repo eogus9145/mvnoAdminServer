@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_cancel_list">
+	<sql id="customer_lgt_cancel_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A CUSTOMER_LGT_IDX1) ORDERED USE_NL(A B)*/
+			   	A.SERVICE_ACCOUNT,
+				${db.mainschema}.F_FORMAT_PH( SERVICE_NUMBER, 'N' ) SERVICE_NUMBER,
+				SERVICE_TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', SERVICE_TYPE) SERVICE_TYPE_NM,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', STATUS) STATUS_NM,
+				TO_CHAR(LSTCOMACTVDATE, 'YYYY/MM/DD') ENTER_DATE,
+				LSTCOMACTVDATE,
+				BALANCE,
+				${db.mainschema}.F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'CAN', COALESCE(A.CANCEL_CD, '-')) CANCEL_CD_NM,
+				CANCEL_CD,
+				CANCEL_RSN_CD,
+				COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'CANCEL_RSN_CD', CANCEL_RSN_CD), '-') CANCEL_RSN_CD_NM,
+				TO_CHAR(CANCEL_DT, 'YYYY/MM/DD HH24:MI') CANCEL_DT,
+				CNMLOB,
+				AGENT_ID,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.AGENT_ID) AGENT_NAME,
+				(SELECT (CASE WHEN AGENT_TYPE = 'D' THEN AGENT_NAME ELSE ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', HIGH_AGENT) END) FROM ${db.mainschema}.AGENT WHERE AGENT_ID = A.AGENT_ID) DEALER_NAME,
+				SERVICE_CODE,
+				${db.mainschema}.F_GET_SERVICE_CD_NM(SERVICE_CODE) PROD_CD_NM,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CUSTTP', CUSTTP) CUSTTP_NM,
+				TOTAL_CHG,
+				TO_CHAR(STOP_DT, 'YYYY/MM/DD') STOP_DT,
+				${db.mainschema}.F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'SUS', COALESCE(A.STOP_CD, '-')) STOP_GUBUN_CODE_NM,
+				(CASE WHEN BNP_CO_CD = '' THEN '신규가입' ELSE '번호이동' END) OPEN_TYPE,
+				CINDTIND,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CINDTIND', CINDTIND) CINDTIND_NM,
+				STAY_QUALF_CD,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'STAY_QUALF_CD', STAY_QUALF_CD) STAY_QUALF_CD_NM,
+				TO_CHAR(STAY_EXPIR_DT, 'YYYY/MM/DD') STAY_EXPIR_DT,
+				${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') CSSN,
+				(
+					SELECT PRDC_CONT_MTH_CNT
+					FROM ${db.mainschema}.LGT_FEATURE
+					WHERE EFFDT = (
+									SELECT MAX(EFFDT)
+									FROM ${db.mainschema}.LGT_FEATURE 
+									WHERE CHGCD = 'P'  
+										AND CONTRACT_NUM = A.SERVICE_ACCOUNT
+								  ) 
+						AND CHGCD = 'P' 
+						AND CONTRACT_NUM = A.SERVICE_ACCOUNT
+						LIMIT 1
+					) PRDC_CONT_MTH_CNT,
+				ALLOT_MTH_CNT,
+				ALLOT_PRN_AMT,
+				ALLOT_INT_AMT,
+				ALLOT_PRN_AMT || ' / ' ||  ALLOT_INT_AMT ALLOT_PRN_AMT_STR,
+				B.BAN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILL_ISUE_TYP_CD', BILL_ISUE_TYP_CD) BILL_ISUE_TYP_CD_NM,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILLMETHCD', BILLMETHCD) BILLMETHCD_NM,
+				BADDRZIP,
+				BPRMADDRLN,
+				BSECADDRLN,
+				COALESCE((SELECT '정액제' FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.SERVICE_CODE LIMIT 1), '종량제') JONGBAND,
+				MODNM, 
+				MODID, 
+				SRLNO,
+				USIM_MDL_CD, 
+				USIM_MDL_NM,
+				USIM_SERICAL_NO
+			   ]]>
+			FROM ${db.mainschema}.CUSTOMER_LGT A
+			JOIN ${db.mainschema}.LGT_SUB B ON A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			JOIN ${db.mainschema}.LGT_CUS C ON B.CUSTOMER_ID = C.CUSTOMER_ID
+			LEFT JOIN ${db.mainschema}.LGT_BAN D ON B.BAN = D.BAN
+			WHERE STATUS = 'C'
+		
+			${@telecentro.common.service.CommonUtil@get_multi_select_query("A.CANCEL_CD", cancel_cd)}
+			${@telecentro.common.service.CommonUtil@get_multi_select_query("A.CANCEL_RSN_CD", cancel_rsn_cd)}
+			
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'contract_num'">
+						    AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'service_number'">
+							AND (B.SERVICE_NUMBER = #{sword} OR B.SERVICE_NUMBER = '010' || #{sword})
+						</when>
+						<when test="sst == 'service_number2'">
+							AND (B.SERVICE_NUMBER = #{sword} OR B.SERVICE_NUMBER = '010' || #{sword} OR A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.CUSTOMER_CTN_HIST WHERE (OLD_CTN = #{sword} OR OLD_CTN = '010' || #{sword}) ))
+						</when>
+						<when test="sst == 'cssn'">
+						  	AND (CSSN = ${db.mainschema}.AES256LOCALENC(#{sword}) OR CSSN = ${db.mainschema}.AES256LOCALENC(#{sword} || '000000') OR USSN = ${db.mainschema}.AES256LOCALENC(#{sword}) OR USSN = ${db.mainschema}.AES256LOCALENC(#{sword} || '000000') )
+						</when>
+						<when test="sst == 'cnmlob'">
+						  	AND (CNMLOB LIKE '%'||UPPER(#{sword})||'%' OR CNMLOB LIKE '%'||LOWER(#{sword})||'%')
+						</when>
+						<when test="sst == 'usim_serical_no'">
+						AND USIM_SERICAL_NO LIKE '%' || #{sword} || '%'
+						</when>
+						<when test="sst == 'srlno'">
+						AND SRLNO = LPAD( #{sword}, 20, '0')
+						</when>
+						<when test="sst == 'ban'">
+						AND B.BAN = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+					
+					<if test='sst != "contract_num" and sst != "service_number" and sst != "ban"'>
+						${@telecentro.common.service.CommonUtil@get_section_query("CANCEL_DT", null, s_dt, e_dt, "Y", null)}
+					</if>
+				</when>
+				<otherwise>
+					${@telecentro.common.service.CommonUtil@get_section_query("CANCEL_DT", null, s_dt, e_dt, "Y", null)}
+				</otherwise>
+			</choose>	  
+			
+			
+			<choose>
+				<when test="agent_id == 'NONE'">
+				  	AND AGENT_ID IS NULL
+				</when>
+				<when test="agent_id != '' and agent_id != null">
+				  	AND (AGENT_ID in (SELECT AGENT_ID FROM ${db.mainschema}.AGENT WHERE AGENT_TYPE IN ('D', 'M') AND AGENT_ID = #{agent_id} OR HIGH_AGENT = #{agent_id}))
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+			
+			<choose>
+				<when test='doc_cnt == "Y"'>
+				  	AND A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day', B.LSTCOMACTVDATE) LIMIT 1)
+				</when>
+				<when test='doc_cnt == "N"'>
+				  	AND A.SERVICE_ACCOUNT NOT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day', B.LSTCOMACTVDATE) LIMIT 1)
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+			
+			<if test="service_type != '' and service_type != null ">
+		   	    AND A.SERVICE_TYPE = #{service_type}
+	   	    </if>
+			
+			<choose>
+				<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+					${@telecentro.common.service.CommonUtil@get_section_query("LSTCOMACTVDATE", null, s_dt_open, e_dt_open, "Y", null)}				
+				</when>
+				<otherwise>
+					A.SERVICE_ACCOUNT = '99999999999999999999';
+				</otherwise>
+			</choose>
+	</sql>
+	<sql id="customer_lgt_cancel_list_add">
+	<![CDATA[
+		, ${db.mainschema}.F_GET_CUST_USE_DT('LGT', fq.SERVICE_ACCOUNT) USE_CNT
+		, COALESCE((SELECT COUNT(*) FROM ${db.mainschema}.CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'LGT' AND ENTER_DATE >= DATE_TRUNC('day', fq.LSTCOMACTVDATE) AND SERVICE_ACCOUNT = fq.SERVICE_ACCOUNT), 0) DOC_CNT
+	]]>
+	</sql>
+	<sql id="customer_lgt_cancel_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_lgt_cancel_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.ENTER_DATE,
+			fq.BALANCE,
+			fq.CANCEL_CD_NM,
+			fq.CANCEL_CD,
+			fq.CANCEL_RSN_CD,
+			fq.CANCEL_RSN_CD_NM,
+			fq.CANCEL_DT,
+			fq.CNMLOB,
+			fq.AGENT_ID,
+			fq.AGENT_NAME,
+			fq.DEALER_NAME,
+			fq.SERVICE_CODE,
+			fq.PROD_CD_NM,
+			fq.CUSTTP_NM,
+			fq.TOTAL_CHG,
+			fq.STOP_DT,
+			fq.STOP_GUBUN_CODE_NM,
+			fq.OPEN_TYPE,
+			fq.CINDTIND,
+			fq.CINDTIND_NM,
+			fq.STAY_QUALF_CD,
+			fq.STAY_QUALF_CD_NM,
+			fq.STAY_EXPIR_DT,
+			fq.CSSN,
+			fq.PRDC_CONT_MTH_CNT,
+			fq.ALLOT_MTH_CNT,
+			fq.ALLOT_PRN_AMT,
+			fq.ALLOT_INT_AMT,
+			fq.ALLOT_PRN_AMT_STR,
+			fq.BAN,
+			fq.BILL_ISUE_TYP_CD_NM,
+			fq.BILLMETHCD_NM,
+			fq.BADDRZIP,
+			fq.BPRMADDRLN,
+			fq.BSECADDRLN,
+			fq.JONGBAND,
+			fq.MODNM, 
+			fq.MODID, 
+			fq.SRLNO,
+			fq.USIM_MDL_CD, 
+			fq.USIM_MDL_NM,
+			fq.USIM_SERICAL_NO
+	]]>
+		<include refid="customer_lgt_cancel_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_cancel_list" />
+		ORDER BY A.CANCEL_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_cancel_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_cancel_list_add" /><![CDATA[
+	            ]]><include refid="customer_lgt_cancel_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_cancel_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_cancel_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_cancel_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

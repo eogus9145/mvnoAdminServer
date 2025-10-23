@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_cdr_data_list">
+	<sql id="customer_skt_cdr_data_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_CDR_DATA_PK1) */
+			   	A.SERVICE_ACCOUNT, 
+				SERVICE_NUMBER,
+				TO_CHAR(START_TIME, 'YY/MM/DD HH24:MI:SS') START_TIME, 
+				TO_CHAR(END_TIME, 'HH24:MI:SS') END_TIME, 
+				PROD_ID, 
+				F_GET_SERVICE_CD_NM(PROD_ID) PROD_ID_NM, 
+				SPECIAL_SVC_TYPE, 
+				AG_SVC_TYPE, 
+				CHARGE_TYPE_IND, 
+				TO_CHAR(ACCESS_DT, 'YY/MM/DD') ACCESS_DT, 
+				TOT_DURATION, 
+				AG_OCT_CNT, 
+				TRUNC(AG_OCT_CNT/1024, 2) AG_OCT_CNT_KBYTE,
+				TRUNC(AG_OCT_CNT/1024/1024, 2) AG_OCT_CNT_MBYTE,
+				TRUNC(AG_OCT_CNT/1024/1024/1024, 2) AG_OCT_CNT_GBYTE,				
+				AG_FREE_OCT_CNT, 
+				TOTAL_USED_CHARGE, 
+				TOTAL_RATED_CHARGE, 
+				TO_CHAR(LAST_UPDATE, 'YY/MM/DD') LAST_UPDATE, 
+				AGENT_ID, 
+				F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM,
+				CHARGE_CODE, 
+				F_GET_COMMON_CD_NM('SKT_CDR_PO', 'CHARGE_CODE', CHARGE_CODE) CHARGE_CODE_NM,
+				SERVICE_TYPE,
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM
+			FROM SKT_CDR_DATA A
+			WHERE ACCESS_DT > TO_DATE('20180101', 'YYYYMMDD')
+			
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'prod_id'">
+						  	AND A.PROD_ID = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	  
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("ACCESS_DT", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="customer_skt_cdr_data_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_skt_cdr_data_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_skt_cdr_data_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER,
+			fq.START_TIME, 
+			fq.END_TIME, 
+			fq.PROD_ID, 
+			fq.PROD_ID_NM, 
+			fq.SPECIAL_SVC_TYPE, 
+			fq.AG_SVC_TYPE, 
+			fq.CHARGE_TYPE_IND, 
+			fq.ACCESS_DT, 
+			fq.TOT_DURATION, 
+			fq.AG_OCT_CNT, 
+			fq.AG_OCT_CNT_KBYTE,
+			fq.AG_OCT_CNT_MBYTE,
+			fq.AG_OCT_CNT_GBYTE,
+			fq.AG_FREE_OCT_CNT, 
+			fq.TOTAL_USED_CHARGE, 
+			fq.TOTAL_RATED_CHARGE, 
+			fq.LAST_UPDATE, 
+			fq.AGENT_ID, 
+			fq.AGENT_NM,
+			fq.CHARGE_CODE, 
+			fq.CHARGE_CODE_NM,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM
+	]]>
+			<include refid="customer_skt_cdr_data_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_skt_cdr_data_list" />
+		ORDER BY A.ACCESS_DT DESC, A.SERVICE_MGMT_NO DESC, A.PROD_ID DESC, A.CHARGE_CODE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_cdr_data_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_cdr_data_list_add" /><![CDATA[
+	            ]]><include refid="customer_skt_cdr_data_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_cdr_data_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_cdr_data_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_cdr_data_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_topup_list_popup_frame">
+	<sql id="customer_lgt_view_topup_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A RECHARGE_IDX3) */
+			   RCG_SEQ,
+			   TO_CHAR(RCG_DATE, 'YYYY-MM-DD HH24:MI:SS') RCG_DATE,
+			   RCG_METHOD,
+			   RES_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'RES_CD', RES_CD) RES_CD_NM, 
+			   RES_MSG,
+			   SERVICE_ACCOUNT,
+			   SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+			   AMOUNT,
+			   RCG_AGENT,
+			   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', RCG_AGENT) RCG_AGENT_NAME,
+			   REQ_TYPE,
+			   BALANCE,
+			   CANCEL_FLAG,
+			   TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT,
+			   ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', CANCEL_ADMIN) CANCEL_ADMIN_NM,
+			   TO_CHAR(TOPUP_S_DT, 'YY-MM-DD') || ' ~ ' || TO_CHAR(TOPUP_E_DT, 'YY-MM-DD') TOPUP_DT,
+			   CHG_TYPE,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'CHG_TYPE', CHG_TYPE) CHG_TYPE_NM,
+			   PCE_YN,
+			   CASE WHEN TOPUP_S_DT < DATE_TRUNC('day', NOW()) + INTERVAL '1 day'  AND TOPUP_E_DT >= DATE_TRUNC('day', NOW()) + INTERVAL '1 day' THEN 'Y' ELSE 'N' END TOPUP_NOW_CHK,
+			   TELCO,
+			   RCG_NUMBER,
+			   DATA_CD,
+			   RCG_RSN, 
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'RCG_RSN', RCG_RSN) RCG_RSN_NM
+		 FROM ${db.mainschema}.RCG A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+			AND CHG_TYPE IN ('L')
+			AND RCG_DATE > TO_DATE('20150101', 'YYYYMMDD')
+			AND AMOUNT > 0
+			AND STATUS = '2'
+		 
+			]]>
+		
+			${@telecentro.common.service.CommonUtil@get_section_query("RCG_DATE", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="customer_lgt_view_topup_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_topup_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.RCG_SEQ,
+			fq.RCG_DATE,
+			fq.RCG_METHOD,
+			fq.RES_CD,
+			fq.RES_CD_NM, 
+			fq.RES_MSG,
+			fq.SERVICE_ACCOUNT,
+			fq.NO_MASK_SERVICE_NUMBER,
+			fq.AMOUNT,
+			fq.RCG_AGENT,
+			fq.RCG_AGENT_NAME,
+			fq.REQ_TYPE,
+			fq.BALANCE,
+			fq.CANCEL_FLAG,
+			fq.CANCEL_DT,
+			fq.CANCEL_ADMIN_NM,
+			fq.TOPUP_DT,
+			fq.CHG_TYPE,
+			fq.CHG_TYPE_NM,
+			fq.PCE_YN,
+			fq.TOPUP_NOW_CHK,
+			fq.TELCO,
+			fq.RCG_NUMBER,
+			fq.DATA_CD,
+			fq.RCG_RSN, 
+			fq.RCG_RSN_NM
+	]]>
+		<include refid="customer_lgt_view_topup_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_view_topup_list_popup_frame" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.RCG_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_topup_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_topup_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_topup_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_topup_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_topup_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

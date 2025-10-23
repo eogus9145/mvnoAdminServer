@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_cdr_pp_list">
+	<sql id="customer_skt_cdr_pp_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_CDR_PP_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)}_IDX1) */
+				A.SERVICE_ACCOUNT SERVICE_ACCOUNT,
+				A.SERVICE_NUMBER,
+				TO_CHAR(START_DATE, 'YY/MM/DD HH24:MI:SS') START_DATE,
+				TO_CHAR(END_DATE, 'HH24:MI:SS') END_DATE,
+				GUBUN,
+				F_GET_COMMON_CD_NM('SKT_CDR_PP', 'GUBUN', GUBUN) GUBUN_NM,
+				CALLED_NUM,
+				NVL(TOT_DURATION,0) TOT_DURATION,
+				TOTAL_CHARGE,
+				BEFORE_REMAINS,
+				AFTER_REMAINS,
+				CHARGE_CODE,
+				F_GET_COMMON_CD_NM('SKT_CDR_PO', 'CHARGE_CODE', CHARGE_CODE) CHARGE_CODE_NM,
+				CALLED_CUST_OWN_PROVIDER,
+				F_GET_CODE_PREFIX(NVL(CALLED_COUNTRY_CODE, CALLED_PREFIX_CODE), 'NAME', 'KOR') CALLED_COUNTRY_NM,
+				INTL_FLAG,
+				F_GET_COMMON_CD_NM('SKT_CDR_PP', 'INTL_FLAG', INTL_FLAG) INTL_FLAG_NM,
+				VOICE_SCREEN_TYPE,
+				F_GET_COMMON_CD_NM('SKT_CDR_PP', 'VOICE_SCREEN_TYPE', VOICE_SCREEN_TYPE) VOICE_SCREEN_TYPE_NM,
+				SUPPLEMENTARY_SERVICE,
+				TO_CHAR(A.RECORD_DATE, 'YY/MM/DD') RECORD_DATE,
+				AGENT_ID,
+				F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM
+			FROM SKT_CDR_PP_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)} A
+			WHERE END_DATE > TO_DATE('20170101', 'YYYYMMDD') 
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'rcv_no'">
+							AND CALLED_NUM = #{sword}
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	  
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("END_DATE", null, s_dt, e_dt, "Y", null)}
+			
+			<if test="call_gubun != '' and call_gubun != null ">
+		   	    AND CALL_GUBUN = #{call_gubun}
+	   	    </if>
+	   	    
+	</sql>
+	<sql id="customer_skt_cdr_pp_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_skt_cdr_pp_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_skt_cdr_pp_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.START_DATE,
+			fq.END_DATE,
+			fq.GUBUN,
+			fq.GUBUN_NM,
+			fq.CALLED_NUM,
+			fq.TOT_DURATION,
+			fq.TOTAL_CHARGE,
+			fq.BEFORE_REMAINS,
+			fq.AFTER_REMAINS,
+			fq.CHARGE_CODE,
+			fq.CHARGE_CODE_NM,
+			fq.CALLED_CUST_OWN_PROVIDER,
+			fq.CALLED_COUNTRY_NM,
+			fq.INTL_FLAG,
+			fq.INTL_FLAG_NM,
+			fq.VOICE_SCREEN_TYPE,
+			fq.VOICE_SCREEN_TYPE_NM,
+			fq.SUPPLEMENTARY_SERVICE,
+			fq.RECORD_DATE,
+			fq.AGENT_ID,
+			fq.AGENT_NM
+	]]>
+		<include refid="customer_skt_cdr_pp_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_skt_cdr_pp_list" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.END_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+        ) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_cdr_pp_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_cdr_pp_list_add" /><![CDATA[
+	            ]]><include refid="customer_skt_cdr_pp_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_cdr_pp_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_cdr_pp_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_cdr_pp_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

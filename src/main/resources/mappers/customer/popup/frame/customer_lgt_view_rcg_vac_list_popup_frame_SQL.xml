@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_vac_list_popup_frame">
+	<sql id="customer_lgt_view_rcg_vac_list_popup_frame">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A VIR_ACCOUNT_PAYMENT_IDX1) */
+			${db.mainschema}.F_FORMAT_VAC(VACC_NO) VACC_NO, 
+			BANK_NAME,
+			USER_TYPE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT', 'USER_TYPE', USER_TYPE) USER_TYPE_NM,
+			TO_CHAR(TO_DATE(TX_DATE||TX_TIME, 'YY/MM/DD HH24:MI:SS'), 'YY/MM/DD HH24:MI:SS') RCG_DATE,
+			CAST(PAY_TOT_AMT AS INTEGER) PAY_TOT_AMT, 
+			REQUESTER, 
+			COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT_PAYMENT', 'PAY_BANK_CODE', PAY_BANK_CODE), PAY_BANK_CODE) PAY_BANK_NAME,
+			(CASE WHEN COALESCE(RCG_CODE,'0001') = '0000' THEN '성공' WHEN COALESCE(RCG_CODE,'0001') = '0001' THEN '진행중' ELSE '실패' END) ERROR_MSG,
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME
+		   ]]>
+		FROM ${db.mainschema}.VIR_ACCOUNT_PAYMENT A 
+		WHERE SERVICE_ACCOUNT = #{account}
+			AND TX_CODE = '1300'
+		
+		AND TX_DATE >= REPLACE(#{s_dt}, '-', '')
+		AND TX_DATE &lt;= REPLACE(#{e_dt}, '-', '')
+			
+	</sql>
+	<sql id="customer_lgt_view_rcg_vac_list_popup_frame_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_lgt_view_rcg_vac_list_popup_frame_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_lgt_view_rcg_vac_list_popup_frame" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.VACC_NO, 
+			fq.BANK_NAME,
+			fq.USER_TYPE,
+			fq.USER_TYPE_NM,
+			fq.RCG_DATE,
+			fq.PAY_TOT_AMT, 
+			fq.REQUESTER, 
+			fq.PAY_BANK_NAME,
+			fq.ERROR_MSG,
+			fq.AGENT_NAME
+	]]>
+		<include refid="customer_lgt_view_rcg_vac_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_view_rcg_vac_list_popup_frame" />
+		ORDER BY A.TX_DATE DESC, A.TX_TIME DESC, A.JM_SEQ_NO DESC, A.TX_CODE DESC, A.VACC_NO DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_rcg_vac_list_popup_frame_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_rcg_vac_list_popup_frame_add" /><![CDATA[
+	            ]]><include refid="customer_lgt_view_rcg_vac_list_popup_frame_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_rcg_vac_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_rcg_vac_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_rcg_vac_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

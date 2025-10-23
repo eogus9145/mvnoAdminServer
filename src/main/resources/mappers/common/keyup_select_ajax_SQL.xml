@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.common.keyup_select_ajax">
+	<select id="keyup_select_ajax" parameterType="map" resultType="egovMap">
+
+		<if test="op_code == 'AGENT_ALL'">
+			<choose>
+				<when test="value == null or value == ''">
+				    <![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+					]]> <!-- ROWNUM 임시 추가 -->	
+				</when>
+				<otherwise>
+					<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT 
+					WHERE STATUS IN ('A', 'S')
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+					]]>
+				</otherwise>
+			</choose>
+		</if>
+		
+		<if test="op_code == 'AGENT_B'">
+			<choose>
+				<when test="value == null or value == ''">
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'B'
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]> <!-- ROWNUM 임시 추가 -->
+				</when>
+				<otherwise>
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'B'
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]>
+				</otherwise>
+			</choose>
+		</if>
+		
+		<if test="op_code == 'AGENT_BDM'">
+			<choose>
+				<when test="value == null or value == ''">
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE IN ('B', 'D', 'M')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]> <!-- ROWNUM 임시 추가 -->
+				</when>
+				<otherwise>
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT 
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE IN ('B', 'D', 'M')
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]>
+				</otherwise>
+			</choose>
+		</if>
+				
+		<if test="op_code == 'AGENT_DM'">
+			<choose>
+				<when test="value == null or value == ''">
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE in ('D', 'M')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]> <!-- ROWNUM 임시 추가 -->
+				</when>
+				<otherwise>
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE in ('D', 'M')
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]>
+				</otherwise>
+			</choose>
+		</if>
+				
+		<if test="op_code == 'AGENT_D'">
+			<choose>
+				<when test="value == null or value == ''">
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'D'
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]> <!-- ROWNUM 임시 추가 -->
+				</when>
+				<otherwise>
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'D'
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]>
+				</otherwise>
+			</choose>
+		</if>
+		
+		<if test="op_code == 'AGENT_M'">
+			<choose>
+				<when test="value == null or value == ''">
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT
+					WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'M'
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]> <!-- ROWNUM 임시 추가 -->
+				</when>
+				<otherwise>
+				<![CDATA[
+					SELECT AGENT_ID KEY, AGENT_NAME VALUE
+					FROM ${db.mainschema}.AGENT WHERE STATUS IN ('A', 'S')
+					AND AGENT_TYPE = 'M'
+					AND (AGENT_ID LIKE '%'||#{value}||'%' OR AGENT_NAME LIKE '%'||#{value}||'%')
+					ORDER BY AGENT_ID DESC
+					LIMIT 50
+				]]>
+				</otherwise>
+			</choose>
+		</if>
+				
+		<if test="op_code == 'PROD_CD'">
+			<choose>
+				<when test="value == null or value == ''">
+					SELECT PROD_CD KEY, SERVICE_NAME VALUE 
+					FROM ${db.mainschema}.CODE_SERVICE_INFO
+					WHERE TELCO = #{telco}
+					      AND SERVICE_TYPE IN ('1', '2')
+					      
+					      <choose>
+						      <when test="service_type != '' and service_type != null ">
+								     AND SERVICE_TYPE = #{service_type}
+						      </when>
+						  </choose>
+						  
+					ORDER BY SERVICE_NAME ASC
+				</when>
+				<otherwise>
+					SELECT PROD_CD KEY, SERVICE_NAME VALUE 
+					FROM ${db.mainschema}.CODE_SERVICE_INFO
+					WHERE TELCO = #{telco}
+					      AND SERVICE_TYPE IN ('1', '2')
+					      AND (PROD_CD LIKE '%'||#{value}||'%' OR SERVICE_NAME LIKE '%'||#{value}||'%')
+					      
+					      <choose>
+						      <when test="service_type != '' and service_type != null ">
+								     AND SERVICE_TYPE = #{service_type}
+						      </when>
+						  </choose>
+					      
+					ORDER BY SERVICE_NAME ASC
+				</otherwise>
+			</choose>
+		</if>
+		
+		<if test="op_code == 'NAT_CD'">
+			<if test='page_telco == "LGT" or page_telco == "KT" or page_telco == "SKT"'>
+				<choose>
+					<when test="value == null or value == ''">
+						<![CDATA[
+						SELECT CD KEY, CD_NM VALUE 
+						FROM ${db.mainschema}.CODE_COMMON
+						WHERE TABLE_NM = 'LGT_CUS'
+						      AND COL = 'NAT_CD'
+						ORDER BY CODE_ORDER ASC
+						]]>
+					</when>
+					<otherwise>
+						<![CDATA[
+						SELECT CD KEY, CD_NM VALUE 
+						FROM ${db.mainschema}.CODE_COMMON
+						WHERE TABLE_NM = 'LGT_CUS'
+						      AND COL = 'NAT_CD'
+						      AND CD_NM LIKE '%'||#{value}||'%'
+						ORDER BY CODE_ORDER ASC
+						]]>
+					</otherwise>
+				</choose>
+			</if>
+		</if>
+		
+		<if test="op_code == 'BAND_CD'">
+			SELECT BAND_CD KEY, BAND_NM VALUE 
+			FROM ${db.mainschema}.CODE_SERVICE_BAND
+			ORDER BY BAND_NM ASC
+		</if>
+		
+		<if test="op_code == 'RCG_AUTO_GRP'">
+			SELECT GRP_CD KEY, GRP_NM VALUE 
+			FROM ${db.mainschema}.CD_AGENT_RCG_AUTO_GRP
+			ORDER BY GRP_NM ASC
+		</if>
+		
+		<if test="op_code == 'RCG_RATE_GRP'">
+			SELECT GRP_CD KEY, GRP_NM VALUE 
+			FROM ${db.mainschema}.CD_AGENT_RCG_RATE_GRP
+			ORDER BY GRP_NM ASC
+		</if>
+		
+		<if test="op_code == 'VIR_ACCOUNT'">
+			SELECT VIR_BANK_NAME KEY, VIR_BANK_NAME VALUE 
+			FROM ${db.mainschema}.VIR_ACCOUNT
+			GROUP BY VIR_BANK_NAME
+		</if>
+		
+		<if test="op_code == 'ADMIN_B'">
+			SELECT ADMIN_ID KEY, ADMIN_NAME VALUE
+			FROM ${db.mainschema}.ADMIN
+			WHERE ADMIN_TYPE = 'B'
+			ORDER BY ADMIN_NAME
+		</if>
+		
+		<if test="op_code == 'BAND_AMOUNT'">
+			SELECT BAND_NM KEY, AMOUNT VALUE 
+			FROM CODE_SERVICE_BAND
+			WHERE PROD_CD = #{prod_cd}
+			ORDER BY AMOUNT ASC
+		</if>
+		
+<!-- 		<if test="op_code == 'BAND_DATA'">
+			SELECT PROD_NM KEY, CUST_AMOUNT VALUE
+			FROM CODE_SERVICE_DATA
+			ORDER BY CUST_AMOUNT ASC
+		</if>	 -->	
+		
+	</select>
+</mapper>
+
+
+

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_view_refund_list_popup_frame">
+	<sql id="_customer_view_refund_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A RCG_REFUND_IDX1) */
+			SEQ,
+			SERVICE_ACCOUNT,
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) SERVICE_NUMBER,
+			(CASE WHEN GUBUN = 'LGT' THEN GUBUN ELSE '' END) TELCO,
+			GUBUN,
+			${db.mainschema}.F_GET_COMMON_CD_NM('RCG_REFUND', 'GUBUN', GUBUN) GUBUN_NM,
+			CUST_NM,
+			CUST_PHONE,
+			REFUND_CD,
+			${db.mainschema}.F_GET_COMMON_CD_NM('RCG_REFUND', 'REFUND_CD', REFUND_CD) REFUND_CD_NM,
+			DESC_INFO,
+			AMOUNT,
+			TO_CHAR(ENTER_DT, 'YYYY-MM-DD') ENTER_DT,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			PAYB_CODE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('RCG_REFUND', 'PAYB_CODE', PAYB_CODE) PAYB_CODE_NM,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REF_ADMIN) REF_ADMIN_NM,
+			REF_STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('COOCON_CMS_REQ', 'SEND_STATUS', REF_STATUS) REF_STATUS_NM
+		 FROM ${db.mainschema}.RCG_REFUND A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+			   AND GUBUN = #{page_telco}
+			]]>
+		
+	</sql>
+	<sql id="_customer_view_refund_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="_customer_view_refund_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.TELCO,
+			fq.GUBUN,
+			fq.GUBUN_NM,
+			fq.CUST_NM,
+			fq.CUST_PHONE,
+			fq.REFUND_CD,
+			fq.REFUND_CD_NM,
+			fq.DESC_INFO,
+			fq.AMOUNT,
+			fq.ENTER_DT,
+			fq.ADMIN_NM,
+			fq.PAYB_CODE,
+			fq.PAYB_CODE_NM,
+			fq.REF_ADMIN_NM,
+			fq.REF_STATUS,
+			fq.REF_STATUS_NM
+	]]>
+		<include refid="_customer_view_refund_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="_customer_view_refund_list_popup_frame" />
+		ORDER BY A.ENTER_DT DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="_customer_view_refund_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="_customer_view_refund_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

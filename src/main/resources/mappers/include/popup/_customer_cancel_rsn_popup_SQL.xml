@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_cancel_rsn_popup">
+	<select id="_customer_cancel_rsn_popup_cust_info" parameterType="map" resultType="egovMap">
+		<if test='page_telco == "LGT"'>
+			SELECT CANCEL_RSN_CD, ${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', 'LGT', #{account}) NO_MASK_CUST_FRST_NM
+			FROM ${db.mainschema}.CUSTOMER_LGT
+			WHERE SERVICE_ACCOUNT = #{account}
+		</if>
+	</select>
+	
+	<select id="_customer_cancel_rsn_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_CAN_RSN(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{can_rsn_cd,mode=IN,jdbcType=VARCHAR},
+		#{can_info,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

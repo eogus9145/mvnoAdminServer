@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.common.commonRcgMapper">
+
+	<select id="P_RCG_BILL_LGT" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_RCG_BILL_LGT(
+		#{req_gubun,mode=IN,jdbcType=VARCHAR},
+		#{rcg_seq,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{service_number,mode=IN,jdbcType=VARCHAR},
+		#{amount,mode=IN,jdbcType=VARCHAR},
+		#{rcg_number,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{rcg_rsn,mode=IN,jdbcType=VARCHAR},
+		#{service_code,mode=IN,jdbcType=VARCHAR},
+		#{feature_code,mode=IN,jdbcType=VARCHAR},
+		#{stop_gubun,mode=IN,jdbcType=VARCHAR},
+		#{stop_reason,mode=IN,jdbcType=VARCHAR},
+		#{call_setup,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_lang,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_cycle,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_day,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_time,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_1,mode=IN,jdbcType=VARCHAR},
+		#{call_setup_2,mode=IN,jdbcType=VARCHAR},
+		#{block_int,mode=IN,jdbcType=VARCHAR},
+		#{block_060,mode=IN,jdbcType=VARCHAR},
+		#{block_start,mode=IN,jdbcType=VARCHAR},
+		#{block_end,mode=IN,jdbcType=VARCHAR},
+		#{block_sun,mode=IN,jdbcType=VARCHAR},
+		#{block_mon,mode=IN,jdbcType=VARCHAR},
+		#{block_tue,mode=IN,jdbcType=VARCHAR},
+		#{block_wed,mode=IN,jdbcType=VARCHAR},
+		#{block_thu,mode=IN,jdbcType=VARCHAR},
+		#{block_fri,mode=IN,jdbcType=VARCHAR},
+		#{block_sat,mode=IN,jdbcType=VARCHAR},
+		#{start_dt,mode=IN,jdbcType=VARCHAR},
+		#{end_dt,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=VARCHAR},
+		#{o_rcg_seq,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+		
+	</select>
+	
+	<select id="lgt_in_res_sleep" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT COUNT(*) CNT
+		FROM ${db.mainschema}.LGT_IN_RES WHERE REQUEST_ID = #{o_seq}
+	]]>
+	</select>
+	
+	<select id="lgt_in_res_sleep_info" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT	GUBUN,
+				TRUNC(CAST(AMOUNT AS NUMERIC)) AMOUNT,
+				O_RES_DT,
+				O_RES_CD,
+				O_RCV_MSG,
+				TRUNC(CAST(O_BALANCE AS NUMERIC)) O_BALANCE,
+				TRUNC(CAST(O_AMOUNT AS NUMERIC)) O_AMOUNT,
+				O_STOP_GUBUN,
+				O_FEATURE_CODE,
+				O_INNET_FREE,
+				O_OUTNET_FREE,
+				O_SMS_REAMINS,
+				O_CALL_SETUP,
+				O_CALL_SETUP_LANG,
+				O_CALL_SETUP_CYCLE,
+				O_CALL_SETUP_DAY,
+				O_CALL_SETUP_TIME,
+				O_CALL_SETUP_1,
+				O_CALL_SETUP_2,
+				O_BLOCK_INT,
+				O_BLOCK_060,
+				O_BLOCK_START,
+				O_BLOCK_END,
+				O_BLOCK_SUN,
+				O_BLOCK_MON,
+				O_BLOCK_TUE,
+				O_BLOCK_WED,
+				O_BLOCK_THU,
+				O_BLOCK_FRI,
+				O_BLOCK_SAT,
+				PROC_CD,
+				PROC_MSG,
+				LGT_MODE
+	 FROM ${db.mainschema}.LGT_IN_RES
+	 WHERE REQUEST_ID = #{o_seq}
+	]]>
+	</select>
+
+	<delete id="DELETE_lgt_in_res_sleep_info" parameterType="map" >
+	<![CDATA[
+		DELETE FROM ${db.mainschema}.LGT_IN_RES WHERE REQUEST_ID = #{o_seq}
+	]]>
+	</delete>
+	
+	<select id="P_RCG_BILL_SKT" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL P_RCG_BILL_SKT(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{rcg_seq,mode=IN,jdbcType=VARCHAR},
+		#{req_gubun,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{service_number,mode=IN,jdbcType=VARCHAR},
+		#{amount,mode=IN,jdbcType=VARCHAR},
+		#{rcg_number,mode=IN,jdbcType=VARCHAR},
+		#{rcg_rsn,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+		
+	</select>
+	
+	<select id="skt_in_res_sleep" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT COUNT(*) CNT
+		FROM SKT_IN_RES WHERE TRACE_NUM = #{o_seq}
+	]]>
+	</select>
+	
+	<select id="skt_in_res_sleep_info" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT	GUBUN,
+					PROD_ID,
+					CHARGE_AMT,
+					SKT_MODE,
+					CHRG_OP_CL_CD,
+					TO_CHAR(O_RES_DATE, 'YYYY-MM-DD') O_RES_DATE,  
+					O_SKT_RES_CD,   
+					O_SKT_ERR_CD, 
+					O_SKT_MSG, 
+					O_STATUS_CD,  
+					O_REMAINS,
+					O_DATA_AVAIL,
+					O_PROD_ID,
+					TO_CHAR(O_DATA_REG_DT, 'YYYY-MM-DD') O_DATA_REG_DT,
+					TO_CHAR(O_DATA_CAN_DT, 'YYYY-MM-DD') O_DATA_CAN_DT,
+					O_DATA_OP_YN,
+					O_DATA_REM_QTY,
+					MVNO_RET_CODE
+		 FROM SKT_IN_RES
+	 	WHERE TRACE_NUM = #{o_seq}
+	]]>
+	</select>
+
+	<delete id="DELETE_skt_in_res_sleep_info" parameterType="map" >
+	<![CDATA[
+		DELETE FROM SKT_IN_RES WHERE TRACE_NUM = #{o_seq}
+	]]>
+	</delete>
+	
+</mapper>

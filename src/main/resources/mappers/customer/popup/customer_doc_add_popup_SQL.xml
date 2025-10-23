@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_doc_add_popup">
+	<select id="customer_doc_add_popup_list" parameterType="map" resultType="egovMap">
+		SELECT ${db.mainschema}.F_FORMAT_PH(${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', #{account}), 'N') SERVICE_NUMBER1, 
+			   ${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', 'ALL', #{account}) CUST_FRST_NM1 
+	</select>
+	
+	<select id="customer_doc_add_popup_service_type" parameterType="map" resultType="egovMap">
+		SELECT ${db.mainschema}.F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', #{account}) TELCO,
+			   ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'ALL', #{account}) SERVICE_TYPE
+	</select>
+	
+	
+</mapper>

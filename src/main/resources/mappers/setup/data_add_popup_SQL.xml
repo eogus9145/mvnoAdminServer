@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.data_add_popup">
+
+	<!-- 자료실 정보를 얻어온다 -->
+	<select id="data_add_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 	
+			BOARD_SEQ,
+			BOARD_TYPE,
+			TITLE,
+			BODY,
+			VIEW_COUNT,
+			USER_IMG,
+			USER_IP,
+			AGENT_ID,
+			NICK_NAME,
+			PASSWD,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI:SS') RECORD_DATE,
+			TOP_FLAG,
+			READ_FLAG
+		FROM ${db.mainschema}.BOARD_DATA A
+		WHERE BOARD_SEQ = CAST(#{no} AS BIGINT)
+		]]>
+	</select>
+
+	<!-- 자료실 등록/수정/삭제 -->
+	<select id="data_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_BOARD_DATA(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{boardType,mode=IN,jdbcType=VARCHAR},
+		#{title,mode=IN,jdbcType=VARCHAR},
+		#{body,mode=IN,jdbcType=VARCHAR},
+		#{thread,mode=IN,jdbcType=VARCHAR},
+		#{userIp,mode=IN,jdbcType=VARCHAR},
+		#{userFile,mode=IN,jdbcType=VARCHAR},
+		#{nickName,mode=IN,jdbcType=VARCHAR},
+		#{passwd,mode=IN,jdbcType=VARCHAR},
+		#{agentId,mode=IN,jdbcType=VARCHAR},
+		#{topFlag,mode=IN,jdbcType=VARCHAR},
+		#{readFlag,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<!-- 자료실 팝업 오픈시 조회수 카운트 -->
+	<update id="UPDATE_data_add_popup_view_count" parameterType="map">
+		UPDATE ${db.mainschema}.BOARD_DATA
+		SET VIEW_COUNT = VIEW_COUNT + 1
+		WHERE BOARD_SEQ = CAST(#{no} AS BIGINT)
+	</update>
+	
+</mapper>

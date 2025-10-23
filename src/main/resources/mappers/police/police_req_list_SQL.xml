@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_req_list">
+	<sql id="police_req_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A POLICE_REQ_IDX) ORDERED USE_NL(B C)*/
+		    A.POLICE_SEQ,
+			REQ_ID,
+			REQ_PLACE,
+			SUMMARY,
+			REQ_PERSON,
+			REQ_PHONE,
+			REQ_EMAIL,
+			STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_REQ', 'STATUS', STATUS) STATUS_NM,
+			MEMO,
+			TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+			TO_CHAR(CON_DT, 'YYYY-MM-DD HH24:MI:SS') CON_DT,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', CON_ADMIN) CON_ADMIN_NM,
+			TO_CHAR(END_DT, 'YYYY-MM-DD HH24:MI:SS') END_DT,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', END_ADMIN) END_ADMIN_NM,
+			CDR_STATUS_10,
+			CDR_STATUS_30,
+			CDR_STATUS_10 || ' / ' || CDR_STATUS_30 CDR_STATUS,
+			(CASE WHEN SMS_STATUS_10 = 0 THEN '' ELSE CAST(SMS_STATUS_10 AS VARCHAR) END) SMS_STATUS_10
+		   ]]>
+		FROM ${db.mainschema}.POLICE_REQ A
+		LEFT JOIN (
+			SELECT POLICE_SEQ,
+				SUM((CASE WHEN STATUS = '10' THEN 1 ELSE 0 END)) CDR_STATUS_10,
+				SUM((CASE WHEN STATUS = '30' THEN 1 ELSE 0 END)) CDR_STATUS_30
+			FROM ${db.mainschema}.POLICE_CALL_CDR
+			WHERE STATUS IN ('10', '30')
+			GROUP BY POLICE_SEQ
+		) B ON A.POLICE_SEQ = B.POLICE_SEQ  
+		LEFT JOIN (
+			SELECT POLICE_SEQ,
+					COUNT(*) SMS_STATUS_10
+			FROM ${db.mainschema}.POLICE_REAL_SMS
+			WHERE STATUS = '10'
+			GROUP BY POLICE_SEQ
+		) C ON A.POLICE_SEQ = C.POLICE_SEQ 
+		WHERE 1 = 1
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'reg_admin'">
+					    AND (REG_ADMIN LIKE '%' || #{sword} || '%' OR REG_ADMIN IN (SELECT ADMIN_ID FROM ${db.mainschema}.ADMIN WHERE ADMIN_TYPE = 'B' AND ADMIN_NAME LIKE '%' || #{sword} || '%') )
+					</when>
+					<when test="sst == 'end_admin'">
+					    AND (END_ADMIN LIKE '%' || #{sword} || '%' OR REG_ADMIN IN (SELECT ADMIN_ID FROM ${db.mainschema}.ADMIN WHERE ADMIN_TYPE = 'B' AND ADMIN_NAME LIKE '%' || #{sword} || '%') )
+					</when>
+					<when test="sst == 'req_id'">
+					    AND REQ_ID LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'req_place'">
+					    AND REQ_PLACE LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'req_person'">
+					    AND REQ_PERSON LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'req_phone'">
+					    AND REQ_PHONE LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>
+							
+		<if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    
+   	    <choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("REG_DT", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				A.SERVICE_ACCOUNT = '99999999999999999999';
+			</otherwise>
+		</choose>
+			
+	</sql>
+	<sql id="police_req_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="police_req_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="police_req_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.POLICE_SEQ,
+			fq.REQ_ID,
+			fq.REQ_PLACE,
+			fq.SUMMARY,
+			fq.REQ_PERSON,
+			fq.REQ_PHONE,
+			fq.REQ_EMAIL,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.MEMO,
+			fq.REG_DT,
+			fq.REG_ADMIN_NM,
+			fq.CON_DT,
+			fq.CON_ADMIN_NM,
+			fq.END_DT,
+			fq.END_ADMIN_NM,
+			fq.CDR_STATUS_10,
+			fq.CDR_STATUS_30,
+			fq.CDR_STATUS,
+			fq.SMS_STATUS_10
+	]]>
+		<include refid="police_req_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="police_req_list" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="police_req_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="police_req_list_add" /><![CDATA[
+	            ]]><include refid="police_req_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="police_req_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="police_req_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="police_req_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

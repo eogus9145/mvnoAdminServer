@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_charge_month_list_popup_frame">
+	<sql id="customer_lgt_view_charge_month_list_popup_frame">
+	<![CDATA[
+			SELECT *
+			FROM(
+				SELECT 
+					TO_CHAR(BILL_TRGT_YYMM, 'YYYY-MM') BILL_TRGT_YYMM,
+					SERVICE_ACCOUNT,
+					TO_CHAR(MAX(PYM_DDAY_DT), 'YYYY-MM-DD') PYM_DDAY_DT,
+					TO_CHAR(MAX(RCPMNY_DT), 'YYYY-MM-DD') RCPMNY_DT,
+					SUM(INV) TOT_INV,
+					SUM(INV) + SUM(SALE) INV,
+					SUM(PYM) + SUM(ETC) PYM,
+					SUM(SALE) SALE,
+					SUM(INV) + SUM(SALE) - SUM(ETC) - SUM(PYM) NON_PAY
+				FROM(
+					SELECT 
+						BILL_TRGT_YYMM,
+						SERVICE_ACCOUNT,
+						SERVICE_TYPE,
+						MAX(PYM_DDAY_DT) PYM_DDAY_DT,
+						MAX(RCPMNY_DT) RCPMNY_DT,
+						SUM(CASE WHEN PYM_CD = 'INV' THEN PYM_AMT ELSE 0 END) + SUM(CASE WHEN PYM_CD = 'INV' THEN VAT_AMT ELSE 0 END) INV,
+						SUM(CASE WHEN PYM_CD = 'PYM' THEN PYM_AMT ELSE 0 END) + SUM(CASE WHEN PYM_CD = 'PYM' THEN VAT_AMT ELSE 0 END) PYM,
+						SUM(CASE WHEN PYM_CD = 'ADJ' THEN PYM_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN PYM_AMT ELSE 0 END) + SUM(CASE WHEN PYM_CD = 'ADJ' THEN VAT_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN VAT_AMT ELSE 0 END) SALE,
+						SUM(CASE WHEN PYM_CD = 'BCK' THEN PYM_AMT * (-1) WHEN PYM_CD = 'RFN' THEN PYM_AMT * (-1) WHEN PYM_CD = 'RFNR' THEN PYM_AMT ELSE 0 END) + SUM(CASE WHEN PYM_CD = 'BCK' THEN VAT_AMT * (-1) WHEN PYM_CD = 'RFN' THEN VAT_AMT * (-1) WHEN PYM_CD = 'RFNR' THEN VAT_AMT ELSE 0 END) ETC
+					FROM ${db.mainschema}.LGT_CHARGE
+					WHERE SERVICE_ACCOUNT = #{account}
+					GROUP BY SERVICE_ACCOUNT,
+							 SERVICE_TYPE,
+							 BILL_TRGT_YYMM
+				)
+				GROUP BY SERVICE_ACCOUNT,
+						 SERVICE_TYPE,
+						 BILL_TRGT_YYMM
+			) A
+			WHERE 1=1
+		 
+			]]>
+		
+	</sql>
+	<sql id="customer_lgt_view_charge_month_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_charge_month_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BILL_TRGT_YYMM,
+			fq.SERVICE_ACCOUNT,
+			fq.PYM_DDAY_DT,
+			fq.RCPMNY_DT,
+			fq.TOT_INV,
+			fq.INV,
+			fq.PYM,
+			fq.SALE,
+			fq.NON_PAY
+	]]>
+		<include refid="customer_lgt_view_charge_month_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_view_charge_month_list_popup_frame" />
+		ORDER BY A.BILL_TRGT_YYMM DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_charge_month_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*,
+	            CASE WHEN PYM = 0 AND NON_PAY = 0 THEN '불필요'
+	            	WHEN NON_PAY = 0 THEN '완납'
+	            	ELSE '미납'
+	            END NON_PAY_FLAG
+	            
+	            ]]><include refid="customer_lgt_view_charge_month_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_charge_month_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_charge_month_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_charge_month_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

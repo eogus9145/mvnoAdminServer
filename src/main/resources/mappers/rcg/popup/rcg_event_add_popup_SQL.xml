@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_event_add_popup">
+	<select id="rcg_event_add_popup_grp_seq" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT NEXTVAL('${db.mainschema}.RCG_EVENT_SEQ') GRP_SEQ
+		]]>
+	</select>
+	
+	<select id="rcg_event_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_RCG_EVENT(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{grpSeq,mode=IN,jdbcType=VARCHAR},
+		#{serviceAccount,mode=IN,jdbcType=VARCHAR},
+		#{chgType,mode=IN,jdbcType=VARCHAR},
+		#{amount,mode=IN,jdbcType=VARCHAR},
+		#{rcgDesc,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

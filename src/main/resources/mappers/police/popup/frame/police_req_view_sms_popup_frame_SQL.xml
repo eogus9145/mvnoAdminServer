@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_req_view_sms_popup_frame">
+	<sql id="police_req_view_sms_popup_frame">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A POLICE_REAL_SMS_IDX) */
+				SEQ,
+				POLICE_SEQ,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_REAL_SMS', 'STATUS', STATUS) STATUS_NM,
+				${db.mainschema}.F_FORMAT_PH(POLICE_PHONE, 'N') POLICE_PHONE,
+				TO_CHAR(STARTDATE, 'YYYY-MM-DD') STARTDATE,
+				TO_CHAR(ENDDATE, 'YYYY-MM-DD') ENDDATE,
+				SUBSTR(STARTTIME, 1, 2) || ':' || SUBSTR(STARTTIME, 3, 2) || ':' || SUBSTR(STARTTIME, 5, 2) STARTTIME,
+				SUBSTR(ENDTIME, 1, 2) || ':' || SUBSTR(ENDTIME, 3, 2) || ':' || SUBSTR(ENDTIME, 5, 2) ENDTIME,
+				CTN,
+				INTERVAL,
+				CHECK_METHOD,
+				RET_CD,
+				RET_MSG,
+				REG_ADMIN,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+				TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT,
+				END_ADMIN,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', END_ADMIN) END_ADMIN_NM,
+				TO_CHAR(END_DT, 'YYYY-MM-DD HH24:MI:SS') END_DT,
+				TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_REAL_SMS', 'TYPE', TYPE) TYPE_NM,
+				SERVICE_ACCOUNT
+			   ]]>
+			FROM   ${db.mainschema}.POLICE_REAL_SMS A 
+			WHERE REG_DT > TO_DATE('2021-01-01','YYYY-MM-DD')
+					AND POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+		
+			
+	</sql>
+	<sql id="police_req_view_sms_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="police_req_view_sms_popup_frame" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.POLICE_SEQ,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.POLICE_PHONE,
+			fq.STARTDATE,
+			fq.ENDDATE,
+			fq.STARTTIME,
+			fq.ENDTIME,
+			fq.CTN,
+			fq.INTERVAL,
+			fq.CHECK_METHOD,
+			fq.RET_CD,
+			fq.RET_MSG,
+			fq.REG_ADMIN_NM,
+			fq.REG_DT,
+			fq.END_ADMIN_NM,
+			fq.END_DT,
+			fq.TYPE,
+			fq.TYPE_NM,
+			fq.SERVICE_ACCOUNT
+	]]>
+		<include refid="police_req_view_sms_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="police_req_view_sms_popup_frame" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="police_req_view_sms_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="police_req_view_sms_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 수사공문 SMS위치추적 요청처리 -->
+	<select id="police_req_view_sms_popup_frame_req" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_POLICE_REAL_SMS(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{police_seq,mode=IN,jdbcType=VARCHAR},
+		#{ctn,mode=IN,jdbcType=VARCHAR},
+		#{police_phone,mode=IN,jdbcType=VARCHAR},
+		#{startdate,mode=IN,jdbcType=VARCHAR},
+		#{enddate,mode=IN,jdbcType=VARCHAR},
+		#{starttime,mode=IN,jdbcType=VARCHAR},
+		#{endtime,mode=IN,jdbcType=VARCHAR},
+		#{interval,mode=IN,jdbcType=VARCHAR},
+		#{check_method,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=BIGINT}
+		)
+	</select>
+	
+	<!-- 수사공문 SMS위치추적 요청결과 조회 -->
+	<select id="police_req_view_sms_popup_frame_req_sleep" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+			${db.mainschema}.NVL(STATUS, '') STATUS,
+			${db.mainschema}.NVL(RET_CD, '') RET_CD
+		FROM ${db.mainschema}.POLICE_REAL_SMS
+		WHERE SEQ = #{seq}
+		]]>
+	</select>
+	
+</mapper>

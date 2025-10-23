@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_refund_add_popup">
+	<select id="rcg_refund_add_popup_cust_info" parameterType="map" resultType="egovMap">
+		SELECT A.SERVICE_ACCOUNT,
+				CNMLOB CUST_NM,
+				CNMLOB CUST_NM2,
+				'LGT' TELCO
+		FROM CUSTOMER_LGT A,
+			LGT_SUB B,
+			LGT_CUS C
+		WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			  AND B.CUSTOMER_ID = C.CUSTOMER_ID
+			  AND A.SERVICE_ACCOUNT = #{account}
+			  
+		UNION ALL
+		
+		SELECT A.SERVICE_ACCOUNT,
+				A.CUST_FRST_NM CUST_NM,
+				A.CUST_FRST_NM CUST_NM2,
+				'SKT' TELCO
+		FROM SKT_CUSTOMER A
+		WHERE A.SERVICE_ACCOUNT = #{account}
+	</select>
+	
+	<select id="rcg_refund_add_popup_info" parameterType="map" resultType="egovMap">
+		SELECT SEQ, 
+			   GUBUN, 
+			   SERVICE_ACCOUNT,
+			   (CASE WHEN GUBUN = 'AGENT' THEN SERVICE_ACCOUNT ELSE '' END) AGENT_ID, 
+			   CUST_NM, 
+			   CUST_NM CUST_NM2, 
+			   CUST_PHONE NO_MASK_CUST_PHONE,
+			   REFUND_CD, 
+			   DESC_INFO, 
+			   AMOUNT, 
+			   PAYB_CODE
+		FROM RCG_REFUND
+		WHERE SEQ = CAST(#{seq} AS BIGINT)
+	</select>
+	
+	<select id="rcg_refund_add_popup_rcg_info" parameterType="map" resultType="egovMap">
+		SELECT AMOUNT FROM RCG WHERE RCG_SEQ = #{rcg_seq}
+	</select>
+	
+	<select id="rcg_refund_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL P_ADMIN_REFUND(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{rcgSeq,mode=IN,jdbcType=VARCHAR},
+		#{gubun,mode=IN,jdbcType=VARCHAR},
+		#{serviceAccount,mode=IN,jdbcType=VARCHAR},
+		#{agentId,mode=IN,jdbcType=VARCHAR},
+		#{custNm,mode=IN,jdbcType=VARCHAR},
+		#{custPhone,mode=IN,jdbcType=VARCHAR},
+		#{amount,mode=IN,jdbcType=VARCHAR},
+		#{outBankSeq,mode=IN,jdbcType=VARCHAR},
+		#{cmsBankCd,mode=IN,jdbcType=VARCHAR},
+		#{cmsUserName,mode=IN,jdbcType=VARCHAR},
+		#{cmsBankAcct,mode=IN,jdbcType=VARCHAR},
+		#{refundCd,mode=IN,jdbcType=VARCHAR},
+		#{descInfo,mode=IN,jdbcType=VARCHAR},
+		#{paybCd,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

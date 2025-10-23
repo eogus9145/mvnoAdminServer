@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.shop.fax_popup">
+
+	<!-- 서비스계정 조회 -->
+	<select id="fax_popup_cust_info" parameterType="map" resultType="egovMap">
+		SELECT SERVICE_ACCOUNT,
+			   SERVICE_NUMBER,
+			   PROD_CD,
+			   PROD_CD_NM,
+			   CUST_FRST_NM,
+			   ENC_CTZ_CORP_NUM,
+			   OPEN_DATE,
+			   CTZ_CORP_NUM_TYPE,
+			   SERVICE_TYPE,
+			   AGENT_ID,
+			   O_AGENT_ID,
+			   TELCO
+		FROM(
+			SELECT A.SERVICE_ACCOUNT,
+				   B.SERVICE_NUMBER,
+				   SERVICE_CODE PROD_CD,
+				   ${db.mainschema}.F_GET_SERVICE_CD_NM(SERVICE_CODE) PROD_CD_NM,
+				   CNMLOB CUST_FRST_NM,
+				   ${db.mainschema}.AES256LOCALDEC(CSSN) ENC_CTZ_CORP_NUM,
+				   TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD') OPEN_DATE,
+				   SERVICE_TYPE,
+				   ${db.mainschema}.F_GET_CUSTOMER_INFO('CTZ_CORP_NUM_TYPE', 'LGT', A.SERVICE_ACCOUNT) CTZ_CORP_NUM_TYPE,
+				   AGENT_ID,
+				   O_AGENT_ID,
+				   'LGT' TELCO
+			FROM ${db.mainschema}.CUSTOMER_LGT A,
+				 ${db.mainschema}.LGT_SUB B, 
+				 ${db.mainschema}.LGT_CUS C
+			WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+				  AND B.CUSTOMER_ID = C.CUSTOMER_ID
+				  AND B.STATUS IN ('A', 'S')
+				  AND (A.SERVICE_ACCOUNT = #{value} OR B.SERVICE_NUMBER = #{value})
+				  
+			UNION ALL
+				  
+			SELECT A.SERVICE_ACCOUNT,
+				   B.SERVICE_NUMBER,
+				   B.PROD_CD,
+				   ${db.mainschema}.F_GET_SERVICE_CD_NM(B.PROD_CD) PROD_CD_NM,
+				   B.CUST_FRST_NM,
+				   ${db.mainschema}.AES256LOCALDEC(ENC_CTZ_CORP_NUM) ENC_CTZ_CORP_NUM,
+				   TO_CHAR(OPEN_DATE, 'YYYY-MM-DD') OPEN_DATE,
+				   SERVICE_TYPE,
+				   ${db.mainschema}.F_GET_CUSTOMER_INFO('CTZ_CORP_NUM_TYPE', 'SKT', A.SERVICE_ACCOUNT) CTZ_CORP_NUM_TYPE,
+				   AGENT_ID,
+				   O_AGENT_ID,
+				   'SKT' TELCO
+			FROM ${db.mainschema}.CUSTOMER_SKT A,
+				 ${db.mainschema}.SKT_CUSTOMER B
+			WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+				  AND A.STATUS IN ('A', 'S')
+				  AND (A.SERVICE_ACCOUNT = #{value} OR B.SERVICE_NUMBER = #{value})
+		)
+	</select>
+	
+	<!-- 개통접수 상세 이미지 가져오기 -->
+	<select id="fax_popup_detail_list" parameterType="map" resultType="egovMap">
+			SELECT  DOC_FILE,
+					SEQ
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE FAX_SEQ = CAST(#{fax_seq} AS BIGINT)
+				  AND USABLE = 'U'
+	</select>
+	
+	<!-- 개통접수 상세 서류이동 -->
+	<select id="fax_add_popup_info1" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT /*+ index_desc(a FAX_LIST_IDX1) ORDERED USE_NL(A B)*/
+			       A.FAX_SEQ,
+			       TO_CHAR(FAX_DATE, 'YY/MM/DD HH24:MI') FAX_DATE,
+			       ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME
+			FROM ${db.mainschema}.FAX_LIST A
+			WHERE FAX_DATE > TO_DATE('20150101', 'YYYYMMDD')
+			    AND FAX_CHG_FLAG = 'Y'
+			    AND FAX_DEL_DATE IS NULL
+			    AND FAX_DATE >= NOW() - INTERVAL '7 days'
+			    AND AGENT_ID IN (SELECT AGENT_ID FROM ${db.mainschema}.FAX_LIST WHERE FAX_SEQ = #{fax_seq})
+			    AND A.FAX_SEQ <> CAST(#{fax_seq} AS BIGINT)
+			]]>
+	</select>
+	
+	<!-- 개통접수 상세 서류이동 -->
+	<select id="fax_add_popup_info2" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT DOC_FILE,
+			       SEQ
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE FAX_SEQ = CAST(#{sch_fax_seq} AS BIGINT)
+				  AND USABLE = 'U'
+			ORDER BY ENTER_DATE ASC
+			]]>
+	</select>
+	
+	<!-- 개통접수 상세 서류이동 -->
+	<select id="fax_add_popup_copy_info" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT DOC_FILE,
+			       ORG_FILE_NM
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE SEQ = CAST(#{seq} AS BIGINT)
+				  AND USABLE = 'U'
+			]]>
+	</select>
+	
+	<!-- 개통접수 상세 정보 조회 -->
+	<select id="fax_popup_info" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT A.FAX_SEQ,
+				TO_CHAR(FAX_DATE, 'YYYY-MM-DD HH24:MI:SS') FAX_DATE,
+				REQ_TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'REQ_TYPE', REQ_TYPE) REQ_TYPE_NM,
+				CALLING_NUM,
+				CALLING_NUM CALLING_NUM2,
+				${db.mainschema}.F_FORMAT_PH(CALLING_NUM, 'N') CALLING_NUM_STR,
+				CALLED_NUM,
+				CALLED_NUM CALLED_NUM2,
+				${db.mainschema}.F_FORMAT_PH(CALLED_NUM, 'N') CALLED_NUM_STR,
+				FAX_FILE_SIZE,
+				FAX_PAGES,
+				FAX_FILE,
+				FAX_CHG_FLAG,
+				FAX_CHG_DT,
+				URL,
+				ACCESS_IP,
+				ACCESS_ID,
+				FAX_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'FAX_GUBUN', FAX_GUBUN) FAX_GUBUN_NM,
+				A.TELCO,
+				PART_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'PART_GUBUN', PART_GUBUN) PART_GUBUN_NM,
+				A.SERVICE_ACCOUNT,
+				CUSTMGMTNO,
+				A.AGENT_ID,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.AGENT_ID) AGENT_NM,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_MOBILE', A.AGENT_ID) AGENT_MOBILE,
+				AGENT_MEMO,
+				ING_CODE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'ING_CODE', ING_CODE) ING_CODE_NM,
+				ING_REASON,
+				A.ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', A.ADMIN_ID) ADMIN_NM,
+				TEL_ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', TEL_ADMIN_ID) TEL_ADMIN_NM,
+				LOCK_DATE,
+				FAX_DEL_DATE,
+				FAX_DEL_CODE,
+				FAX_MEMO1,
+				FAX_MEMO2,
+				FAX_NOTE,
+				COALESCE(DETAIL_CNT, 0) DETAIL_CNT,
+				${db.mainschema}.F_GET_LOCK(LOCK_DATE, LOCK_ADMIN, #{SESSION_ADM_ID}) LOCK_FLAG,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', LOCK_ADMIN) LOCK_ADMIN_NM
+			  FROM ${db.mainschema}.FAX_LIST A
+			  LEFT JOIN (SELECT COUNT(*) DETAIL_CNT, FAX_SEQ FROM ${db.mainschema}.FAX_DETAIL WHERE USABLE = 'U' GROUP BY FAX_SEQ) B ON A.FAX_SEQ = B.FAX_SEQ
+				WHERE FAX_DATE > (NOW() - INTERVAL '365 days')
+						AND FAX_CHG_FLAG = 'Y'
+						AND FAX_DEL_DATE IS NULL
+					AND A.FAX_SEQ = CAST(#{fax_seq} AS BIGINT)
+			]]>
+	</select>
+	
+	<!-- 개통접수 상세 서류이동 -->
+	<select id="fax_popup_save_info1" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT DOC_FILE,
+					SEQ,
+					TRANS_YN,
+					DOC_GUBUN,
+					ORG_FILE_NM
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE FAX_SEQ = CAST(#{fax_seq} AS BIGINT)
+				  AND USABLE = 'U'
+			]]>
+	</select>
+	
+	<select id="fax_popup_save_info2" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT ${db.mainschema}.F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', #{service_account}) TELCO
+			]]>
+	</select>
+	
+	<select id="fax_popup_cust_info2" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT 
+				T1.O_AGENT_ID,
+				T1.AGENT_ID,
+				T1.TELCO
+			FROM (
+				SELECT O_AGENT_ID,
+				       AGENT_ID,
+				       'LGT' TELCO
+				FROM ${db.mainschema}.CUSTOMER_LGT A,
+				     ${db.mainschema}.LGT_SUB B
+				WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+					  AND A.SERVICE_ACCOUNT = #{service_account}
+				
+				UNION ALL
+				
+				SELECT O_AGENT_ID,
+				       AGENT_ID,
+				       'SKT' TELCO
+				FROM ${db.mainschema}.CUSTOMER_SKT A,
+				     ${db.mainschema}.SKT_CUSTOMER B
+				WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+					  AND A.SERVICE_ACCOUNT = #{service_account}
+			) T1
+			LIMIT 1
+			]]>
+	</select>
+	
+	<select id="fax_popup_cust_agent_chg" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_CHG(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{agent_id,mode=IN,jdbcType=VARCHAR},
+		#{nat_cd,mode=IN,jdbcType=VARCHAR},
+		#{lang,mode=IN,jdbcType=VARCHAR},
+		#{stay_qualf_cd,mode=IN,jdbcType=VARCHAR},
+		#{stay_expir_dt,mode=IN,jdbcType=VARCHAR},
+		#{vac_flag,mode=IN,jdbcType=VARCHAR},
+		#{vac_bank,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="fax_popup_doc_gubun" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT DOC_GUBUN, 
+				   MASK_YN,
+				   TRANS_YN
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE SEQ = CAST(#{seq} AS BIGINT)
+				  AND USABLE = 'U'
+			]]>
+	</select>
+	
+	<select id="fax_popup_mask_info" parameterType="map" resultType="egovMap">
+			<![CDATA[
+			SELECT DOC_GUBUN,
+				   DOC_FILE,
+				   ORG_FILE_NM
+			FROM ${db.mainschema}.FAX_DETAIL A
+			WHERE SEQ = CAST(#{seq} AS BIGINT)
+				  AND USABLE = 'U'
+			]]>
+	</select>
+	
+	<select id="fax_popup_telco_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+			    ${db.mainschema}.F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', #{account}) TELCO
+		]]>
+	</select>
+	
+	<update id="UPDATE_fax_lock" parameterType="map">
+		<if test="mode == 'LOCK'">
+			UPDATE ${db.mainschema}.FAX_LIST
+			SET LOCK_ADMIN = #{SESSION_ADM_ID},
+				LOCK_DATE = NOW()
+			WHERE FAX_SEQ = CAST(#{fax_seq} AS BIGINT)
+		</if>
+
+		<if test="mode == 'LOCK_CANCEL'">
+			UPDATE ${db.mainschema}.FAX_LIST
+			SET LOCK_ADMIN = '',
+				LOCK_DATE = NULL
+			WHERE FAX_SEQ = CAST(#{fax_seq} AS BIGINT)
+		</if>
+
+	</update>
+</mapper>

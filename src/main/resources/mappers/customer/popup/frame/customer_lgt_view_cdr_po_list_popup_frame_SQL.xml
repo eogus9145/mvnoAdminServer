@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_cdr_po_list_popup_frame">
+	<sql id="customer_lgt_view_cdr_po_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_CDR_PO_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)}_IDX_1) */
+			    CDR_KD_CD,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CDR_PO', 'CDR_KD_CD', CDR_KD_CD) CDR_KD_CD_NM,
+				USE_TRGT_NO,
+				TO_CHAR(USE_STRT_DTTM, 'YYYY-MM-DD HH24:MI:SS') USE_STRT_DTTM,
+				TO_CHAR(USE_END_DTTM, 'HH24:MI:SS') USE_END_DTTM,
+				TRIM(TO_CHAR(USE_SEC, '9999999999.99')) USE_SEC,
+				USE_BYTE USE_BYTE,
+				TRUNC(USE_BYTE / 1024, 2) USE_BYTE_KBYTE,
+				COALESCE(TOT_RTNG_AMT, 2) TOT_RTNG_AMT,
+				ENTR_SVC_CD1
+		 FROM ${db.mainschema}.LGT_CDR_PO_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)} A
+		 WHERE CUST_ENTR_NO = #{account}
+			   AND USE_STRT_DTTM >= (SELECT TO_DATE(${db.mainschema}.F_GET_CUSTOMER_INFO('OPEN_DATE','LGT',#{account}), 'YYYY-MM-DD HH24:MI:SS'))
+			   AND USE_END_DTTM >= DATE_TRUNC('month', NOW()) - INTERVAL '6 months'
+		 
+			]]>
+		
+			${@telecentro.common.service.CommonUtil@get_section_query("USE_END_DTTM", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="customer_lgt_view_cdr_po_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_cdr_po_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.CDR_KD_CD,
+			fq.CDR_KD_CD_NM,
+			fq.USE_TRGT_NO,
+			fq.USE_STRT_DTTM,
+			fq.USE_END_DTTM,
+			fq.USE_SEC,
+			fq.USE_BYTE,
+			fq.USE_BYTE_KBYTE,
+			fq.TOT_RTNG_AMT,
+			fq.ENTR_SVC_CD1
+	]]>
+		<include refid="customer_lgt_view_cdr_po_list_popup_frame_add" />
+	<![CDATA[
+		FROM (
+	]]>
+        <include refid="customer_lgt_view_cdr_po_list_popup_frame" />
+		ORDER BY A.CUST_ENTR_NO DESC, A.USE_END_DTTM DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+
+	</select>
+
+	<select id="customer_lgt_view_cdr_po_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_cdr_po_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_cdr_po_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_cdr_po_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_cdr_po_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

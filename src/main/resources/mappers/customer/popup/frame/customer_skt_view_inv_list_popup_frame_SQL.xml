@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_inv_list_popup_frame">
+	<sql id="customer_skt_view_inv_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A SKT_INV_IDX3) */
+			  TO_CHAR(BILL_DT,'YYYY-MM-DD') BILL_DT,
+			  TO_CHAR(BILL_DT,'YYYY-MM') BILL_DT_MONTH,
+			  BL_ACNT_NUM,
+			  SERVICE_ACCOUNT,
+			  SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+			  PROD_CD,
+			  F_GET_SERVICE_CD_NM(PROD_CD) PROD_CD_NM,
+			  CUST_NAME,
+			  CUST_TYPE,
+			  TAX_USER_FLAG,
+			  TAX_FLAG,
+			  TO_CHAR(OPEN_DATE,'YYYY-MM-DD') OPEN_DATE,
+			  PAY_ITEM_CD,
+			  F_GET_COMMON_CD_NM('SKT_INV', 'PAY_ITEM_CD', PAY_ITEM_CD) PAY_ITEM_CD_NM,
+			  INVOICE_ITEM_CD,
+			  F_GET_COMMON_CD_NM('SKT_INV', 'INVOICE_ITEM_CD', INVOICE_ITEM_CD) INVOICE_ITEM_CD_NM,
+			  CHARGE_ITEM_CD,
+			  F_GET_COMMON_CD_NM('SKT_INV', 'CHARGE_ITEM_CD', CHARGE_ITEM_CD) CHARGE_ITEM_CD_NM,
+			  BILL_ITEM_CD,
+			  INV_GUBUN,
+			  BILL_AMOUNT,
+			  SERVICE_NONPAY_AMOUNT,
+			  TO_CHAR(MODIFY_DT,'YYYY-MM-DD') MODIFY_DT,
+			  MODIFY_AMOUNT,
+			  SKT_AGENT_ID,
+			  SKT_SALE_ID,
+			  INV_FLAG,
+			  AGENT_ID,
+			  TO_CHAR(RECORD_DATE,'YYYY-MM-DD') RECORD_DATE,
+			  FILE_NAME,
+			  ERR
+		  FROM SKT_INV A 
+		  WHERE SERVICE_ACCOUNT = #{account}
+		  		AND BILL_DT >= TO_DATE(#{s_dt} || '-01', 'YYYY-MM-DD')
+		 		AND BILL_DT < TO_DATE(#{e_dt} || '-01', 'YYYY-MM-DD') + INTERVAL '1 month'
+		  		AND BILL_DT >= (SELECT TO_DATE(F_GET_CUSTOMER_INFO('OPEN_DATE','SKT', #{account} ), 'YYYY-MM-DD HH24:MI:SS'))
+	]]>
+			
+	</sql>
+	<sql id="customer_skt_view_inv_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_skt_view_inv_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.BILL_DT,
+			fq.BILL_DT_MONTH,
+			fq.BL_ACNT_NUM,
+			fq.SERVICE_ACCOUNT,
+			fq.NO_MASK_SERVICE_NUMBER,
+			fq.PROD_CD,
+			fq.PROD_CD_NM,
+			fq.CUST_NAME,
+			fq.CUST_TYPE,
+			fq.TAX_USER_FLAG,
+			fq.TAX_FLAG,
+			fq.OPEN_DATE,
+			fq.PAY_ITEM_CD,
+			fq.PAY_ITEM_CD_NM,
+			fq.INVOICE_ITEM_CD,
+			fq.INVOICE_ITEM_CD_NM,
+			fq.CHARGE_ITEM_CD,
+			fq.CHARGE_ITEM_CD_NM,
+			fq.BILL_ITEM_CD,
+			fq.INV_GUBUN,
+			fq.BILL_AMOUNT,
+			fq.SERVICE_NONPAY_AMOUNT,
+			fq.MODIFY_DT,
+			fq.MODIFY_AMOUNT,
+			fq.SKT_AGENT_ID,
+			fq.SKT_SALE_ID,
+			fq.INV_FLAG,
+			fq.AGENT_ID,
+			fq.RECORD_DATE,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+			<include refid="customer_skt_view_inv_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="customer_skt_view_inv_list_popup_frame" />
+			ORDER BY A.SERVICE_ACCOUNT DESC, A.BILL_DT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_view_inv_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_view_inv_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_view_inv_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_view_inv_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_view_inv_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

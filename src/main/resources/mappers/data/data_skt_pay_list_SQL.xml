@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.data_skt_pay_list">
+	<sql id="data_skt_pay_list">
+	<![CDATA[		
+		SELECT 
+			SKT_AGENT_ID,
+			SKT_SALE_ID,
+			SKT_PAYAGENT_ID,
+			BL_ACNT_NUM,
+			SERVICE_ACCOUNT,
+			PAYMENT_SN,
+			SERVICE_NUMBER,
+			CUST_NAME,
+			OPEN_DATE,
+			TO_CHAR(CUST_PAY_DT,'YYYY-MM-DD') CUST_PAY_DT,
+			TRANSF_DT,
+			TO_CHAR(PAY_OP_DT,'YYYY-MM-DD') PAY_OP_DT,
+			SETTL_WAY_CD,
+			PAY_MTHD_CD,
+			BILL_TYPE_CD,
+			BANK_CD,
+			BANK_NAME,
+			CARD_OK_NO,
+			PAY_TYPE,
+			TO_CHAR(BILL_DT, 'YYYY-MM') BILL_DT,
+			CHARGE_ITEM_CD,
+			F_GET_COMMON_CD_NM('SKT_INV', 'CHARGE_ITEM_CD', CHARGE_ITEM_CD) CHARGE_ITEM_CD_NM,
+			PAY_AMOUNT,
+			PAY_VIR_BANK,
+			PAY_VIR_ACCOUNT,
+			BILL_GUBUN,
+			AGENT_ID,
+			F_GET_AGENT_INFO('AGENT_NAME',AGENT_ID) AGENT_NM,
+			RECORD_DATE,
+			FILE_NAME,
+			ERR
+		FROM SKT_PAY A
+		WHERE CUST_PAY_DT > to_date('2018-09-01', 'yyyy-mm-dd')
+		]]>
+		
+		<if test="s_dt != '' and s_dt != null ">
+			AND CUST_PAY_DT >= TO_DATE(#{s_dt} || '-01', 'YYYY-MM-DD')
+   	    </if>
+   	    
+   	    <if test="e_dt != '' and e_dt != null ">
+			AND CUST_PAY_DT &lt; TO_DATE(#{e_dt} || '-01', 'YYYY-MM-DD') + INTERVAL '1 month'
+			
+   	    </if>
+   	    
+   	    <if test="s_b_month != '' and s_b_month != null ">
+	   	    AND BILL_DT >= TO_DATE(#{s_b_month} || '-01', 'YYYY-MM-DD')
+   	    </if>
+   	    
+   	    <if test="e_b_month != '' and e_b_month != null ">
+	   	    AND BILL_DT &lt; TO_DATE(#{e_b_month} || '-01', 'YYYY-MM-DD') + INTERVAL '1 month'
+   	    </if>
+		
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (SERVICE_ACCOUNT =  F_GET_ACCOUNT('SKT', #{sword}) OR SERVICE_ACCOUNT =  F_GET_ACCOUNT('SKT', '010' || #{sword}))
+					</when>
+					<when test="sst == 'bl_acnt_num'">
+					    AND BL_ACNT_NUM = #{sword}
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise> 
+				</choose>
+			</when>
+		</choose>	  
+			
+	</sql>
+	<sql id="data_skt_pay_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_pay_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_pay_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SKT_AGENT_ID,
+			fq.SKT_SALE_ID,
+			fq.SKT_PAYAGENT_ID,
+			fq.BL_ACNT_NUM,
+			fq.SERVICE_ACCOUNT,
+			fq.PAYMENT_SN,
+			fq.SERVICE_NUMBER,
+			fq.CUST_NAME,
+			fq.OPEN_DATE,
+			fq.CUST_PAY_DT,
+			fq.TRANSF_DT,
+			fq.PAY_OP_DT,
+			fq.SETTL_WAY_CD,
+			fq.PAY_MTHD_CD,
+			fq.BILL_TYPE_CD,
+			fq.BANK_CD,
+			fq.BANK_NAME,
+			fq.CARD_OK_NO,
+			fq.PAY_TYPE,
+			fq.BILL_DT,
+			fq.CHARGE_ITEM_CD,
+			fq.CHARGE_ITEM_CD_NM,
+			fq.PAY_AMOUNT,
+			fq.PAY_VIR_BANK,
+			fq.PAY_VIR_ACCOUNT,
+			fq.BILL_GUBUN,
+			fq.AGENT_ID,
+			fq.AGENT_NM,
+			fq.RECORD_DATE,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+			<include refid="data_skt_pay_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="data_skt_pay_list" />
+		<choose>
+			<when test="s_dt != '' and s_dt != null">
+				ORDER BY A.CUST_PAY_DT DESC, A.AGENT_ID DESC
+			</when>
+			<otherwise>
+				ORDER BY A.BILL_DT DESC
+			</otherwise>
+		</choose>
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_pay_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_pay_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_pay_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_pay_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_pay_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_pay_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

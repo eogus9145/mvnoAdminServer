@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.data_skt_cms_fee_list">
+	<sql id="data_skt_cms_fee_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_CMS_FEE_IDX1) */
+			   	SK_AGENT_ID,
+				TO_CHAR(CMS_REG_DT,'YYYY/MM/DD') CMS_REG_DT,
+				SERVICE_ACCOUNT,
+				SERVICE_NUMBER,
+				BL_ACNT_NUM,
+				CUST_FRST_NM,
+				INCOME_TYPE_NM,
+				BANK_CARD_CD,
+				BANK_CARD_NM,
+				PAY_AMOUNT,
+				PAY_WILL_AMOUNT,
+				INCOM_OK_NM,
+				OPEN_SK_AGENT_ID,
+				SK_ERR_MSG,
+				RECORD_DATE,
+				FILE_NAME,
+				ERR
+			FROM SKT_CMS_FEE A 
+			WHERE CMS_REG_DT > TO_DATE('20230101', 'YYYYMMDD')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	  
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("CMS_REG_DT", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="data_skt_cms_fee_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_cms_fee_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_cms_fee_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SK_AGENT_ID,
+			fq.CMS_REG_DT,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.BL_ACNT_NUM,
+			fq.CUST_FRST_NM,
+			fq.INCOME_TYPE_NM,
+			fq.BANK_CARD_CD,
+			fq.BANK_CARD_NM,
+			fq.PAY_AMOUNT,
+			fq.PAY_WILL_AMOUNT,
+			fq.INCOM_OK_NM,
+			fq.OPEN_SK_AGENT_ID,
+			fq.SK_ERR_MSG,
+			fq.RECORD_DATE,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+		<include refid="data_skt_cms_fee_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_cms_fee_list" />
+			ORDER BY A.CMS_REG_DT DESC, A.SERVICE_ACCOUNT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_cms_fee_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_cms_fee_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_cms_fee_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_cms_fee_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_cms_fee_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_cms_fee_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

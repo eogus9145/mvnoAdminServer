@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.data_skt_ei13b_list">
+	<sql id="data_skt_ei13b_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A EI13A_IDX) ORDERED USE_NL(a b) */
+			   	A.JOB_SE_CD,
+				A.SEQ_NUM,
+				A.ACNT_NUM,
+				F_FORMAT_PH(AESSKTDEC(A.REP_SVC_NUM), 'N') REP_SVC_NUM,
+				B.BANK_CD,
+				NVL(F_GET_COMMON_CD_NM('EI13A', 'BANK_CD', B.BANK_CD), B.BANK_CD) BANK_CD_NM,
+				TO_CHAR(TO_DATE(A.REQ_DT, 'YYYYMMDD'),'YYYY-MM-DD') REQ_DT,
+				PRF_REQ_TS,
+				FILE_CD,
+				F_GET_COMMON_CD_NM('EI13B', 'FILE_CD', FILE_CD) FILE_CD_NM,
+				FILE_EXT,
+				FILE_LEN,
+				SUBSTR(FILE_DATA, 10, 1) FILE_DATA,
+				TO_CHAR(B.RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE,
+				TO_CHAR(EI13C_RSLT_DT, 'YYYY-MM-DD') EI13C_RSLT_DT,
+				EI13C_RSLT_CD,
+				NVL(F_GET_COMMON_CD_NM('EI13B', 'EI13C_RSLT_CD', EI13C_RSLT_CD), EI13C_RSLT_CD) EI13C_RSLT_CD_NM,
+				EI13C_ERROR_CD,
+				SERVICE_ACCOUNT,
+				F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', SERVICE_ACCOUNT) TELCO,
+				F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'SKT', SERVICE_ACCOUNT) SERVICE_NUMBER,
+				O_ERR,
+				(CASE WHEN O_ERR = '0000' THEN '성공' ELSE O_ERR END) FILE_RESULT_STR,
+				EI13B_RSLT_CD,
+				EI13B_RSLT_MSG,
+				(CASE WHEN (SELECT 'Y' FROM CUSTOMER_DOC WHERE USABLE = 'U' AND DOC_GUBUN = '30' AND SERVICE_ACCOUNT = B.SERVICE_ACCOUNT LIMIT 1) = 'Y' THEN '등록됨' ELSE CONCAT('N', '(', EI13B_RSLT_CD, ':', EI13B_RSLT_MSG, ')') END) REAL_PAYINFO_STR
+			FROM EI13A A
+			LEFT JOIN EI13B B 
+				ON A.REP_SVC_NUM = B.REP_SVC_NUM
+				AND A.BANK_NUM = B.BANK_NUM
+				AND A.REQ_DT = B.REQ_DT
+			WHERE A.REQ_DT >= '20230101'
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'job_se_cd'">
+						    AND A.JOB_SE_CD = #{sword}
+						</when>
+						<when test="sst == 'seq_num'">
+						  	AND A.SEQ_NUM = #{sword}
+						</when>
+						<when test="sst == 'acnt_num'">
+						  	AND A.ACNT_NUM = #{sword}
+						</when>
+						<when test="sst == 'rep_svc_num'">
+						  	AND A.REP_SVC_NUM = AES_SKT.ENC(#{sword})
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND B.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	
+			
+			<if test="s_dt != '' and s_dt != null ">
+		   	    AND A.REQ_DT >= REPLACE(#{s_dt}, '-', '')
+	   	    </if>
+	   	    
+	   	    <if test="e_dt != '' and e_dt != null ">
+		   	    AND A.REQ_DT &lt;= REPLACE(#{e_dt}, '-', '')
+	   	    </if>
+	   	    
+	   	    <if test="file_cd != '' and file_cd != null ">
+		   	    AND FILE_CD = #{file_cd}
+	   	    </if>
+	   	    
+	   	    <choose>
+				<when test='payinfo_flag == "Y"'>
+				  	AND SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND DOC_GUBUN = '30')
+				</when>
+				<when test='payinfo_flag == "N"'>
+				  	AND SERVICE_ACCOUNT NOT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND DOC_GUBUN = '30')
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+			
+			<choose>
+				<when test='ei13b_rslt_cd == "Y"'>
+				  	AND EI13B_RSLT_CD = '0000'
+				</when>
+				<when test='ei13b_rslt_cd == "N"'>
+				  	AND (EI13B_RSLT_CD &lt;&gt; '0000' OR SETNULL(EI13B_RSLT_CD) IS NULL)
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+			
+			<if test="ei13c_rslt_cd != '' and ei13c_rslt_cd != null ">
+		   	    <choose>
+					<when test='ei13c_rslt_cd == "N"'>
+					  	AND SETNULL(EI13C_RSLT_CD) IS NULL
+					</when>
+					<otherwise>
+						AND EI13C_RSLT_CD = #{ei13c_rslt_cd}
+					</otherwise>
+				</choose>
+	   	    </if>
+			
+	</sql>
+	<sql id="data_skt_ei13b_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_ei13b_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_ei13b_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.JOB_SE_CD,
+			fq.SEQ_NUM,
+			fq.ACNT_NUM,
+			fq.REP_SVC_NUM,
+			fq.BANK_CD,
+			fq.BANK_CD_NM,
+			fq.REQ_DT,
+			fq.PRF_REQ_TS,
+			fq.FILE_CD,
+			fq.FILE_CD_NM,
+			fq.FILE_EXT,
+			fq.FILE_LEN,
+			fq.FILE_DATA,
+			fq.RECORD_DATE,
+			fq.EI13C_RSLT_DT,
+			fq.EI13C_RSLT_CD,
+			fq.EI13C_RSLT_CD_NM,
+			fq.EI13C_ERROR_CD,
+			fq.SERVICE_ACCOUNT,
+			fq.TELCO,
+			fq.SERVICE_NUMBER,
+			fq.O_ERR,
+			fq.FILE_RESULT_STR,
+			fq.EI13B_RSLT_CD,
+			fq.EI13B_RSLT_MSG,
+			fq.REAL_PAYINFO_STR
+	]]>
+			<include refid="data_skt_ei13b_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_ei13b_list" />
+			ORDER BY A.REQ_DT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+    	) fq
+	]]>
+	</select>
+
+	<select id="data_skt_ei13b_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_ei13b_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_ei13b_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_ei13b_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_ei13b_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_ei13b_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

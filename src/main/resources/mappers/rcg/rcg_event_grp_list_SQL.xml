@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_event_grp_list">
+	<sql id="rcg_event_grp_list">
+	<![CDATA[
+	
+		SELECT GRP_SEQ,
+		       RCG_DESC,
+		       TO_CHAR(REG_DT, 'YYYY-MM-DD') REG_DT,
+		       ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+		       ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', REG_AGENT) REG_AGENT_NM,
+		       ${db.mainschema}.F_GET_COMMON_CD_NM('RCG_EVENT', 'EVENT_GUBUN', EVENT_GUBUN) EVENT_GUBUN_NM,
+		       COUNT(*) TOT_CNT,
+		       SUM(AMOUNT) TOT_AMOUNT,
+		       SUM((CASE WHEN STATUS = '-1' THEN 1 ELSE 0 END)) STATUS_M,
+		       SUM((CASE WHEN STATUS = '0' THEN 1 ELSE 0 END)) STATUS_0,
+		       SUM((CASE WHEN STATUS = '1' THEN 1 ELSE 0 END)) STATUS_1,
+		       SUM((CASE WHEN STATUS = '2' THEN 1 ELSE 0 END)) STATUS_2,
+		       SUM((CASE WHEN STATUS = '7' THEN 1 ELSE 0 END)) STATUS_7,
+		       SUM((CASE WHEN STATUS = '8' THEN 1 ELSE 0 END)) STATUS_8,
+		       SUM((CASE WHEN STATUS = '9' THEN 1 ELSE 0 END)) STATUS_9,
+		       SUM((CASE WHEN RCG_STATUS = '9' THEN 1 ELSE 0 END)) RCG_STATUS_9,
+		       SUM((CASE WHEN RCG_STATUS = '2' THEN 1 ELSE 0 END)) RCG_STATUS_2
+		FROM ${db.mainschema}.RCG_EVENT A
+		WHERE REG_DT >= TO_DATE('20150101', 'YYYYMMDD')
+		   ]]>
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("REG_DT", null, s_dt, e_dt, "Y", null)}
+		
+   	    GROUP BY GRP_SEQ, RCG_DESC, TO_CHAR(REG_DT, 'YYYY-MM-DD'), ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN), ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', REG_AGENT), ${db.mainschema}.F_GET_COMMON_CD_NM('RCG_EVENT', 'EVENT_GUBUN', EVENT_GUBUN)
+		ORDER BY A.GRP_SEQ DESC
+   	    
+	</sql>
+	<sql id="rcg_event_grp_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="rcg_event_grp_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="rcg_event_grp_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.GRP_SEQ,
+			fq.RCG_DESC,
+			fq.REG_DT,
+			fq.REG_ADMIN_NM,
+			fq.REG_AGENT_NM,
+			fq.EVENT_GUBUN_NM, 
+			fq.TOT_CNT,
+			fq.TOT_AMOUNT,
+			fq.STATUS_M,
+			fq.STATUS_0,
+			fq.STATUS_1,
+			fq.STATUS_2,
+			fq.STATUS_7,
+			fq.STATUS_8,
+			fq.STATUS_9,
+			fq.RCG_STATUS_9,
+			fq.RCG_STATUS_2
+	]]>
+		<include refid="rcg_event_grp_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="rcg_event_grp_list" />
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="rcg_event_grp_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="rcg_event_grp_list_add" /><![CDATA[
+	            ]]><include refid="rcg_event_grp_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="rcg_event_grp_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="rcg_event_grp_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="rcg_event_grp_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.black_list">
+	<sql id="black_list">
+	<![CDATA[
+			SELECT /*+ index_desc(a CUSTOMER_BLACK_IDX1)*/
+			   	SEQ, 
+				${db.mainschema}.AES256LOCALDEC(CUSTOMER_SSN) CUSTOMER_SSN, 
+				CUSTOMER_NAME, 
+				TELCO, 
+				SERVICE_ACCOUNT, 
+				BLACK_CD, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'BLACK_CD', BLACK_CD) BLACK_CD_NM, 
+				STATUS, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'STATUS', STATUS) STATUS_NM, 
+				OPEN_FLAG, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'OPEN_FLAG', OPEN_FLAG) OPEN_FLAG_NM, 
+				REFUND_YN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'REFUND_YN', REFUND_YN) REFUND_YN_NM, 
+				CALL_YN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'CALL_YN', CALL_YN) CALL_YN_NM, 
+				TO_CHAR(ENTER_DT, 'YYYY-MM-DD HH24:MI:SS') ENTER_DT, 
+				DESC_INFO, 
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM
+			FROM ${db.mainschema}.CUSTOMER_BLACK A
+			WHERE ENTER_DT > TO_DATE('20150101', 'YYYYMMDD') 
+				  AND STATUS IN ('A')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT ${db.mainschema}.F_GET_ACCOUNT('LGT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT ${db.mainschema}.F_GET_ACCOUNT('LGT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'customer_name'">
+						  	AND (CUSTOMER_NAME LIKE '%'||UPPER(#{sword})||'%' OR CUSTOMER_NAME LIKE '%'||LOWER(#{sword})||'%')
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	  
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("ENTER_DT", null, s_dt, e_dt, "Y", null)}
+			
+	   	    ${@telecentro.common.service.CommonUtil@get_multi_select_query("BLACK_CD", black_cd)}
+	   	    
+			<if test="telco != '' and telco != null ">
+		   	    AND TELCO = #{telco}
+	   	    </if>
+	   	    	   	    
+	   	    <if test="call_yn != '' and call_yn != null ">
+		   	    AND CALL_YN = #{call_yn}
+	   	    </if>
+	   	    
+	   	    <if test="refund_yn != '' and refund_yn != null ">
+		   	    AND REFUND_YN = #{refund_yn}
+	   	    </if>
+	   	    
+	   	    <if test="open_flag != '' and open_flag != null ">
+		   	    AND OPEN_FLAG = #{open_flag}
+	   	    </if>
+	   	    
+	   	    <if test="ctz_corp_num_type != '' and ctz_corp_num_type != null ">
+		   	    AND CTZ_CORP_NUM_TYPE = #{ctz_corp_num_type}
+	   	    </if>
+	   	    
+	   	    <if test="status != '' and status != null ">
+		   	    AND STATUS = #{status}
+	   	    </if>
+	   	    
+	</sql>
+	<sql id="black_list_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<sql id="black_list_add_excel">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="black_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ, 
+			fq.CUSTOMER_SSN, 
+			fq.CUSTOMER_NAME, 
+			fq.TELCO, 
+			fq.SERVICE_ACCOUNT, 
+			fq.BLACK_CD, 
+			fq.BLACK_CD_NM, 
+			fq.STATUS, 
+			fq.STATUS_NM, 
+			fq.OPEN_FLAG, 
+			fq.OPEN_FLAG_NM, 
+			fq.REFUND_YN, 
+			fq.REFUND_YN_NM, 
+			fq.CALL_YN, 
+			fq.CALL_YN_NM, 
+			fq.ENTER_DT, 
+			fq.DESC_INFO, 
+			fq.ADMIN_NM
+	]]>
+		<include refid="black_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="black_list" />
+		ORDER BY A.ENTER_DT DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="black_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="black_list_add" /><![CDATA[
+	            ]]><include refid="black_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="black_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="black_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="black_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

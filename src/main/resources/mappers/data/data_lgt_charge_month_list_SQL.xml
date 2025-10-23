@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.data.data_lgt_charge_month_list">
+	<sql id="data_lgt_charge_month_list">
+	<![CDATA[
+	
+		SELECT *
+		FROM(
+			SELECT TO_CHAR(BILL_TRGT_YYMM, 'YYYY-MM') BILL_TRGT_YYMM,
+				   SERVICE_ACCOUNT,
+				   ${db.mainschema}.F_FORMAT_PH(${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'LGT', SERVICE_ACCOUNT), 'N') SERVICE_NUMBER,
+				   SERVICE_TYPE,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', SERVICE_TYPE) SERVICE_TYPE_NM,
+				   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', ${db.mainschema}.F_GET_CUSTOMER_INFO('AGENT_ID', 'LGT', SERVICE_ACCOUNT)) AGENT_NM,
+				   TO_CHAR(MAX(PYM_DDAY_DT), 'YYYY-MM-DD') PYM_DDAY_DT,
+				   TO_CHAR(MAX(RCPMNY_DT), 'YYYY-MM-DD') RCPMNY_DT,
+				   TRUNC(SUM(INV), 2) TOT_INV,
+				   TRUNC(SUM(INV) + SUM(SALE), 2) INV,
+				   TRUNC(SUM(PYM) + SUM(ETC), 2) PYM,
+				   TRUNC(SUM(SALE), 2) SALE,
+				   TRUNC(SUM(INV) + SUM(SALE) - SUM(ETC) - SUM(PYM), 2) NON_PAY
+			FROM(
+					SELECT BILL_TRGT_YYMM,
+						   SERVICE_ACCOUNT,
+						   SERVICE_TYPE,
+						   MAX(PYM_DDAY_DT) PYM_DDAY_DT,
+						   MAX(RCPMNY_DT) RCPMNY_DT,
+						   SUM((CASE WHEN PYM_CD = 'INV' THEN PYM_AMT ELSE 0 END)) + SUM((CASE WHEN PYM_CD = 'INV' THEN VAT_AMT ELSE 0 END)) INV,
+						   SUM((CASE WHEN PYM_CD = 'PYM' THEN PYM_AMT ELSE 0 END)) + SUM((CASE WHEN PYM_CD = 'PYM' THEN VAT_AMT ELSE 0 END)) PYM, 
+						   SUM((CASE WHEN PYM_CD = 'ADJ' THEN PYM_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN PYM_AMT ELSE 0 END)) + SUM((CASE WHEN PYM_CD = 'ADJ' THEN VAT_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN VAT_AMT ELSE 0 END)) SALE,
+						   SUM((CASE WHEN PYM_CD = 'BCK' THEN PYM_AMT * (-1) WHEN PYM_CD = 'RFN' THEN PYM_AMT * (-1) WHEN PYM_CD = 'RFNR' THEN PYM_AMT ELSE 0 END)) + SUM((CASE WHEN PYM_CD = 'BCK' THEN VAT_AMT * (-1) WHEN PYM_CD = 'RFN' THEN VAT_AMT * (-1) WHEN PYM_CD = 'RFNR' THEN VAT_AMT ELSE 0 END)) ETC
+					FROM ${db.mainschema}.LGT_CHARGE
+					WHERE BILL_TRGT_YYMM > to_date('2020-01-01', 'yyyy-mm-dd')
+	 ]]>					
+	 				<choose>
+						<when test="sword != '' and sword != null">
+							<choose>
+								<when test="sst == 'service_account'">
+								    AND SERVICE_ACCOUNT = #{sword}
+								</when>
+								<when test="sst == 'service_number'">
+									AND (SERVICE_ACCOUNT =  ${db.mainschema}.F_GET_ACCOUNT('LGT', #{sword}) OR SERVICE_ACCOUNT =  ${db.mainschema}.F_GET_ACCOUNT('LGT', '010' || #{sword}))
+								</when>
+								<otherwise>
+									AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+								</otherwise>
+							</choose>
+						</when>
+					</choose>
+					
+					<choose>
+						<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+							AND BILL_TRGT_YYMM >= TO_DATE(#{s_dt} || '-01', 'YYYY-MM-DD')
+							AND BILL_TRGT_YYMM &lt;= TO_DATE(#{e_dt} || '-01', 'YYYY-MM-DD')
+						</when>
+						<otherwise>
+							AND SERVICE_ACCOUNT = '999999999999999999999'
+						</otherwise>
+					</choose>
+								
+					<if test="service_type != '' and service_type != null ">
+						<choose>
+							<when test="service_type == 'NULL'">
+							    AND SERVICE_TYPE IS NULL
+							</when>
+							<otherwise>
+								AND SERVICE_TYPE = #{service_type}
+							</otherwise>
+						</choose>
+			   	    </if>
+			   	    
+					GROUP BY SERVICE_ACCOUNT, SERVICE_TYPE, BILL_TRGT_YYMM
+			)
+			GROUP BY SERVICE_ACCOUNT, SERVICE_TYPE, BILL_TRGT_YYMM
+		)
+		WHERE 1=1 
+	
+		<if test="non_pay != '' and non_pay != null ">
+			<choose>
+				<when test='non_pay == "1"'>
+				    AND PYM &lt;> 0 AND NON_PAY = 0
+				</when>
+				<when test='non_pay == "2"'>
+				    AND NON_PAY > 0
+				</when>
+				<when test='non_pay == "3"'>
+				    AND PYM = 0 AND NON_PAY = 0
+				</when>
+			</choose>
+   	    </if>
+		
+	</sql>
+	<sql id="data_lgt_charge_month_list_add">
+	<![CDATA[
+		, CASE WHEN PYM = 0 AND NON_PAY = 0 THEN '불필요'
+			   WHEN NON_PAY = 0 THEN '완납'
+			   ELSE '미납'
+		  END PAYMENT_STR
+	]]>
+	</sql>
+	<sql id="data_lgt_charge_month_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_lgt_charge_month_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BILL_TRGT_YYMM,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.AGENT_NM,
+			fq.PYM_DDAY_DT,
+			fq.RCPMNY_DT,
+			fq.TOT_INV,
+			fq.INV,
+			fq.PYM,
+			fq.SALE,
+			fq.NON_PAY
+	]]>
+		<include refid="data_lgt_charge_month_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="data_lgt_charge_month_list" />
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_lgt_charge_month_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_lgt_charge_month_list_add" /><![CDATA[
+	            ]]><include refid="data_lgt_charge_month_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_lgt_charge_month_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_lgt_charge_month_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_lgt_charge_month_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_vac_list">
+	<sql id="rcg_vac_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A VIR_ACCOUNT_PAYMENT_IDX1) */
+		    TELCO, 
+			TX_DATE, 
+			TX_TIME,
+			TO_CHAR(TO_DATE(TX_DATE||TX_TIME, 'YY/MM/DD HH24:MI:SS'), 'YY/MM/DD HH24:MI:SS') RCG_DATE,
+			JM_SEQ_NO, 
+			TX_TYPE, 
+			TX_CODE, 
+			MALL_CODE, 
+			SUB_MALL, 
+			BANK_CODE, 
+			${db.mainschema}.F_FORMAT_VAC(VACC_NO) VACC_NO, 
+			CUST_NAME, 
+			REQUESTER, 
+			PAY_BANK_CODE, 
+			COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT_PAYMENT', 'PAY_BANK_CODE', PAY_BANK_CODE), PAY_BANK_CODE) PAY_BANK_NAME,
+			BRANCH_NAME, 
+			CAST(PAY_TOT_AMT AS INTEGER) PAY_TOT_AMT, 
+			CASH, CHECK1, 
+			PAY_MEDIA, 
+			(CASE WHEN COALESCE(RCG_CODE,'0001') = '0000' THEN '성공' WHEN COALESCE(RCG_CODE, '0001') = '0001' THEN '진행중' ELSE '실패' END) ERROR_MSG,
+			ERROR_MSG ERROR_MSG2,
+			VIR_ID, 
+			SERVICE_ACCOUNT, 
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) SERVICE_NUMBER, 
+			VIR_SEQ,
+			USER_TYPE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT', 'USER_TYPE', USER_TYPE) USER_TYPE_NM,
+			BANK_NAME,
+			AGENT_ID,
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME, 
+			RET_CD,
+			RCG_CODE,
+			RCG_MSG
+		   ]]>
+		FROM ${db.mainschema}.VIR_ACCOUNT_PAYMENT A 
+		WHERE TX_CODE = '1300'
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword}) OR SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', '010' || #{sword}))
+					</when>
+					<when test="sst == 'vacc_no'">
+						AND VACC_NO LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+		
+		
+		<if test="user_type != '' and user_type != null ">
+	   	    AND USER_TYPE = #{user_type}
+   	    </if>
+   	    
+   	    <if test="telco != '' and telco != null ">
+	   	    AND TELCO = #{telco}
+   	    </if>
+   	    
+   	    <if test="error_msg != '' and error_msg != null and error_msg == 'success' ">
+	   	    AND RCG_CODE = '0000'
+   	    </if>
+   	    
+   	    <if test="error_msg != '' and error_msg != null and error_msg == 'fail' ">
+	   	    AND (RCG_CODE &lt;> '0000' OR RCG_CODE IS NULL)
+   	    </if>
+   	    
+   	    <choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				AND TX_DATE >= REPLACE(#{s_dt}, '-', '')
+				AND TX_DATE &lt;= REPLACE(#{e_dt}, '-', '')			
+			</when>
+			<otherwise>
+				A.SERVICE_ACCOUNT = '99999999999999999999';
+			</otherwise>
+		</choose>
+			
+	</sql>
+	<sql id="rcg_vac_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="rcg_vac_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="rcg_vac_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.TELCO, 
+			fq.TX_DATE, 
+			fq.TX_TIME,
+			fq.RCG_DATE,
+			fq.JM_SEQ_NO, 
+			fq.TX_TYPE, 
+			fq.TX_CODE, 
+			fq.MALL_CODE, 
+			fq.SUB_MALL, 
+			fq.BANK_CODE, 
+			fq.VACC_NO, 
+			fq.CUST_NAME, 
+			fq.REQUESTER, 
+			fq.PAY_BANK_CODE, 
+			fq.PAY_BANK_NAME,
+			fq.BRANCH_NAME, 
+			fq.PAY_TOT_AMT, 
+			fq.CASH, CHECK1, 
+			fq.PAY_MEDIA, 
+			fq.ERROR_MSG,
+			fq.ERROR_MSG2,
+			fq.VIR_ID, 
+			fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER, 
+			fq.VIR_SEQ,
+			fq.USER_TYPE,
+			fq.USER_TYPE_NM,
+			fq.BANK_NAME,
+			fq.AGENT_ID,
+			fq.AGENT_NAME, 
+			fq.RET_CD,
+			fq.RCG_CODE,
+			fq.RCG_MSG
+	]]>
+		<include refid="rcg_vac_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="rcg_vac_list" />
+		ORDER BY A.TX_DATE DESC, A.TX_TIME DESC, A.JM_SEQ_NO DESC, A.TX_CODE DESC, A.VACC_NO DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="rcg_vac_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="rcg_vac_list_add" /><![CDATA[
+	            ]]><include refid="rcg_vac_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="rcg_vac_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="rcg_vac_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="rcg_vac_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 가상계좌 재충전처리 -->
+	<select id="rcg_vac_list_retry" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_RCG_VAC_RETRY(
+		#{vir_seq,mode=IN,jdbcType=VARCHAR},
+		#{tx_date,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+</mapper>

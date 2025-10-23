@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_status_modify_popup">
+	<sql id="customer_lgt_status_modify_popup">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_SERVICE_STATUS_IDX1) */
+				SERVICE_NUMBER NO_MASK_SERVICE_NUMBER, 
+				BEFORE_STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_STATUS', CAST(BEFORE_STATUS AS VARCHAR)) BEFORE_STATUS_NM,
+				AFTER_STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_STATUS', CAST(AFTER_STATUS AS VARCHAR)) AFTER_STATUS_NM,
+				TO_CHAR(MODIFY_DATE, 'YYYY-MM-DD HH24:MI:SS') MODIFY_DATE,
+				MODIFY_REASON,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME' , ADMIN_ID) ADMIN_NAME,
+				RESULT_CODE
+		 FROM ${db.mainschema}.LGT_SERVICE_STATUS A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+		]]>
+
+	</sql>
+	<select id="customer_lgt_status_modify_popup" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.NO_MASK_SERVICE_NUMBER, 
+			fq.BEFORE_STATUS,
+			fq.BEFORE_STATUS_NM,
+			fq.AFTER_STATUS,
+			fq.AFTER_STATUS_NM,
+			fq.MODIFY_DATE,
+			fq.MODIFY_REASON,
+			fq.ADMIN_NAME,
+			fq.RESULT_CODE
+        FROM (
+	]]>
+		<include refid="customer_lgt_status_modify_popup" />
+		ORDER BY A.MODIFY_DATE DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_status_modify_popup_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_status_modify_popup" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<select id="customer_lgt_status_modify_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT SERVICE_STATUS, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_STATUS', SERVICE_STATUS) SERVICE_STATUS_NM,
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'LGT', SERVICE_ACCOUNT) NO_MASK_SERVICE_NUMBER
+		FROM ${db.mainschema}.CUSTOMER_LGT
+		WHERE SERVICE_ACCOUNT = #{account}
+		]]>
+	</select>
+	
+</mapper>

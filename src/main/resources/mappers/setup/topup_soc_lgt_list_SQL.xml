@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.topup_soc_lgt_list">
+	<sql id="topup_soc_lgt_list">
+		SELECT SERVICE_CODE,
+			   ${db.mainschema}.F_GET_SERVICE_CD_NM(SERVICE_CODE) SERVICE_CODE_NM,
+		       RCG_AMT,
+		       SMS_DESC,
+		       TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI') REG_DT,
+		       ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) ADMIN_NM
+		FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT A
+		
+	</sql>
+	<sql id="topup_soc_lgt_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="topup_soc_lgt_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="topup_soc_lgt_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SERVICE_CODE,
+		   	fq.SERVICE_CODE_NM,
+	       	fq.RCG_AMT,
+	       	fq.SMS_DESC,
+	       	fq.REG_DT,
+		    fq.ADMIN_NM
+	]]>
+		<include refid="topup_soc_lgt_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="topup_soc_lgt_list" />
+		ORDER BY A.SERVICE_CODE, A.RCG_AMT
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="topup_soc_lgt_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="topup_soc_lgt_list_add" /><![CDATA[
+	            ]]><include refid="topup_soc_lgt_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="topup_soc_lgt_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="topup_soc_lgt_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="topup_soc_lgt_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

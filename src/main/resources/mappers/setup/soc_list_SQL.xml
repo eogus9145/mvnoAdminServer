@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.soc_list">
+	<sql id="soc_list">
+		SELECT 
+			TELCO,
+			PROD_CD,
+			SERVICE_TYPE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('CODE_SERVICE_INFO', 'SERVICE_TYPE', SERVICE_TYPE) SERVICE_TYPE_NM,
+			SERVICE_NAME,
+			GROUP_CD,
+			BASIC_FEE,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI') RECORD_DATE,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			COALESCE((
+				CASE 
+					WHEN TELCO = 'LGT' THEN (SELECT 'Y' FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.PROD_CD LIMIT 1)
+					ELSE 'N' 
+				END
+			), 'N') TOPUP_FLAG,
+			REMARK
+		FROM ${db.mainschema}.CODE_SERVICE_INFO A 
+		WHERE SERVICE_TYPE IN ('1', '2')
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'prod_cd'">
+					    AND (PROD_CD LIKE '%' || #{sword} || '%' OR SERVICE_NAME LIKE '%' || #{sword} || '%')
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		
+		<if test="service_type != '' and service_type != null ">
+	   	    AND SERVICE_TYPE = #{service_type}
+   	    </if>
+		<if test="telco != '' and telco != null ">
+	   	    AND TELCO = #{telco}
+   	    </if>
+		
+	</sql>
+	<sql id="soc_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="soc_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="soc_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.TELCO,
+			fq.PROD_CD,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.SERVICE_NAME,
+			fq.GROUP_CD,
+			fq.BASIC_FEE,
+			fq.RECORD_DATE,
+			fq.ADMIN_NM,
+			fq.TOPUP_FLAG,
+			fq.REMARK
+	]]>
+		<include refid="soc_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="soc_list" />
+		ORDER BY A.RECORD_DATE DESC, A.PROD_CD
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="soc_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="soc_list_add" /><![CDATA[
+	            ]]><include refid="soc_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="soc_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="soc_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="soc_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

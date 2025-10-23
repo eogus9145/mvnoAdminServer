@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_change_list">
+	<sql id="customer_skt_change_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_CHANGE_HIS_IDX1) */
+			   	SERVICE_ACCOUNT,
+				F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'SKT', SERVICE_ACCOUNT) SERVICE_NUMBER, 
+				SERVICE_TYPE, 
+				F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', SERVICE_TYPE) SERVICE_TYPE_NM, 
+				ACT_CODE, 
+				F_GET_COMMON_CD_NM('SKT_CHANGE_HIS', 'ACT_CODE', ACT_CODE) ACT_CODE_NM, 
+				COL, 
+				F_GET_COMMON_CD_NM('SKT_CHANGE_HIS','COL',COL) COL_NM, 
+				OLD_VAL, 
+				NEW_VAL1, 
+				F_GET_CHANGE_HIS_VAL(COL, NEW_VAL1, '1') NEW_VAL1_NM, 
+				NEW_VAL2, 
+				F_GET_CHANGE_HIS_VAL(COL, NEW_VAL2, '2') NEW_VAL2_NM, 
+				TO_CHAR(CHG_DT, 'YYYY-MM-DD HH24:MI') CHG_DT, 
+				TO_CHAR(PROC_DATE, 'YYYY-MM-DD') PROC_DATE, 
+				CASE WHEN SETNULL(F_GET_ADMIN_INFO('ADMIN_NAME',PROC_ID)) IS NULL THEN PROC_ID ELSE F_GET_ADMIN_INFO('ADMIN_NAME',PROC_ID) END AS PROC_ID,
+				FILE_NM
+			FROM SKT_CHANGE_HIS A 
+			WHERE CHG_DT > TO_DATE('20170101', 'YYYYMMDD')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	  
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("CHG_DT", null, s_dt, e_dt, "Y", null)}
+			
+			<if test="act_code != '' and act_code != null ">
+		   	    AND ACT_CODE = #{act_code}
+	   	    </if>
+	   	    
+	   	    <if test="col != '' and col != null ">
+		   	    AND COL = #{col}
+	   	    </if>
+	   	    
+	</sql>
+	<sql id="customer_skt_change_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_skt_change_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_skt_change_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER, 
+			fq.SERVICE_TYPE, 
+			fq.SERVICE_TYPE_NM, 
+			fq.ACT_CODE, 
+			fq.ACT_CODE_NM, 
+			fq.COL, 
+			fq.COL_NM, 
+			fq.OLD_VAL, 
+			fq.NEW_VAL1, 
+			fq.NEW_VAL1_NM, 
+			fq.NEW_VAL2, 
+			fq.NEW_VAL2_NM, 
+			fq.CHG_DT, 
+			fq.PROC_DATE, 
+			fq.PROC_ID,
+			fq.FILE_NM
+	]]>
+		   <include refid="customer_skt_change_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="customer_skt_change_list" />
+			ORDER BY A.CHG_DT DESC, A.SERVICE_ACCOUNT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_change_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_change_list_add" /><![CDATA[
+	            ]]><include refid="customer_skt_change_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_change_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_change_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_change_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

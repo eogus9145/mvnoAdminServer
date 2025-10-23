@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.vir_account_list">
+	<sql id="vir_account_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A VIR_ACCOUNT_IDX1) */
+		    ${db.mainschema}.F_FORMAT_VAC(${db.mainschema}.AES256LOCALDEC(VIR_ACCOUNT_ID)) VIR_ACCOUNT_ID, 
+			VIR_BANK_NAME, 
+			USER_TYPE, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT', 'USER_TYPE', USER_TYPE) USER_TYPE_NM,
+			TELCO, 
+			SERVICE_ACCOUNT, 
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', TELCO, SERVICE_ACCOUNT) SERVICE_NUMBER,
+			AGENT_ID,  
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME, 
+			STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('VIR_ACCOUNT', 'STATUS', STATUS) STATUS_NM,
+			TO_CHAR(OPEN_DATE, 'YY/MM/DD') OPEN_DATE, 
+			TO_CHAR(CLOSE_DATE, 'YY/MM/DD') CLOSE_DATE, 
+			TO_CHAR(LAST_PAYMENT_DATE, 'YY/MM/DD') LAST_PAYMENT_DATE, 
+			USE_COUNT,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM
+		   ]]>
+		FROM ${db.mainschema}.VIR_ACCOUNT A 
+		WHERE VIR_ACCOUNT_ID > '0'
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword}) OR A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', '010' || #{sword}))
+					</when>
+					<when test="sst == 'vir_account_id'">
+						AND VIR_ACCOUNT_ID LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		
+		<if test="user_type != '' and user_type != null ">
+	   	    AND USER_TYPE = #{user_type}
+   	    </if>  
+   	    
+   	    <if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>  
+   	    
+   	    <if test="telco != '' and telco != null ">
+	   	    AND TELCO = #{telco}
+   	    </if>
+   	    
+   	    <if test="vir_bank_name != '' and vir_bank_name != null ">
+	   	    AND VIR_BANK_NAME = #{vir_bank_name}
+   	    </if> 
+			
+	</sql>
+	<sql id="vir_account_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="vir_account_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="vir_account_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.VIR_ACCOUNT_ID, 
+			fq.VIR_BANK_NAME, 
+			fq.USER_TYPE, 
+			fq.USER_TYPE_NM,
+			fq.TELCO, 
+			fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER,
+			fq.AGENT_ID,  
+			fq.AGENT_NAME, 
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.OPEN_DATE, 
+			fq.CLOSE_DATE, 
+			fq.LAST_PAYMENT_DATE, 
+			fq.USE_COUNT,
+			fq.ADMIN_NM
+	]]>
+		<include refid="vir_account_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="vir_account_list" />
+		ORDER BY A.USE_COUNT DESC, A.VIR_BANK_NAME DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="vir_account_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="vir_account_list_add" /><![CDATA[
+	            ]]><include refid="vir_account_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="vir_account_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="vir_account_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="vir_account_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

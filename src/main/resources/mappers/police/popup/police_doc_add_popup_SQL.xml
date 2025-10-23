@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_doc_add_popup">
+	<select id="police_doc_add_popup_list" parameterType="map" resultType="egovMap">
+		SELECT 
+			REQ_ID,
+			REQ_PLACE,
+			REQ_PERSON
+		FROM ${db.mainschema}.POLICE_REQ
+		WHERE POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+	</select>
+	
+	<select id="police_doc_add_popup_police_check" parameterType="map" resultType="egovMap">
+		SELECT 
+			(CASE WHEN COUNT(*) = 0 THEN 'N' ELSE 'Y' END) IS_EXIST 
+	  	FROM ${db.mainschema}.POLICE_REQ
+	  	WHERE POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+	</select>
+	
+	<!-- 유통망 이미지 등록/삭제 -->
+	<select id="police_doc_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_POLICE_DOC(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{police_seq,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{doc_file,mode=IN,jdbcType=VARCHAR},
+		#{del_rsn,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

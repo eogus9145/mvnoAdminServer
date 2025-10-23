@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.agent_deposit_list">
+	<sql id="agent_deposit_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A AGENT_DEPOSIT_IDX1) */
+		   		SEQ,
+			   AGENT_ID,
+			   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM,
+			   DEPOSIT_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('AGENT_DEPOSIT', 'DEPOSIT_CD', DEPOSIT_CD) DEPOSIT_CD_NM, 
+			   TO_CHAR(DEPOSIT_DATE, 'YYYY-MM-DD HH24:MI:SS') DEPOSIT_DATE,
+			   SERVICE_NUMBER,
+			   SERVICE_ACCOUNT,
+			   RECHARGE,
+			   MINUS_DEPOSIT,
+			   PLUS_DEPOSIT,
+			   REMAINS,
+			   REMARK,
+			   ADMIN_ID,
+			   ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			   TELCO
+		   ]]>
+		FROM ${db.mainschema}.AGENT_DEPOSIT A
+		WHERE DEPOSIT_DATE > TO_DATE('20150101', 'YYYYMMDD')
+		
+		
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND A.SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword}) OR A.SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', '010' || #{sword}))
+					</when>
+					<when test="sst == 'service_number2'">
+						AND (A.SERVICE_NUMBER = #{sword} OR A.SERVICE_NUMBER = '010' || #{sword})
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>
+		
+		<if test="deposit_cd != '' and deposit_cd != null ">
+	   	    AND A.DEPOSIT_CD = #{deposit_cd}
+   	    </if>
+   	    
+   	    <if test="agent_id != '' and agent_id != null ">
+	   	    AND A.AGENT_ID = #{agent_id}
+   	    </if>
+   	    
+		<choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("DEPOSIT_DATE", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				AND A.AGENT_ID = '999999999999999999999'
+			</otherwise>
+		</choose>
+   	    
+	</sql>
+	<sql id="agent_deposit_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="agent_deposit_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="agent_deposit_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+		   	fq.SEQ,
+			fq.AGENT_ID,
+			fq.AGENT_NM,
+			fq.DEPOSIT_CD,
+			fq.DEPOSIT_CD_NM, 
+			fq.DEPOSIT_DATE,
+			fq.SERVICE_NUMBER,
+			fq.SERVICE_ACCOUNT,
+			fq.RECHARGE,
+			fq.MINUS_DEPOSIT,
+			fq.PLUS_DEPOSIT,
+			fq.REMAINS,
+			fq.REMARK,
+			fq.ADMIN_NM,
+			fq.TELCO
+	]]>
+		<include refid="agent_deposit_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="agent_deposit_list" />
+		ORDER BY A.DEPOSIT_DATE DESC, A.AGENT_ID DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="agent_deposit_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="agent_deposit_list_add" /><![CDATA[
+	            ]]><include refid="agent_deposit_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="agent_deposit_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="agent_deposit_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="agent_deposit_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

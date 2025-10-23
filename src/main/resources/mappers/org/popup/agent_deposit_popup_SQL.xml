@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.agent_deposit_popup">
+	<sql id="agent_deposit_popup_list">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A AGENT_DEPOSIT_IDX2) */
+		   		SEQ, 
+				AGENT_ID, 
+				DEPOSIT_CD,
+				${db.mainschema}.F_GET_COMMON_CD_NM('AGENT_DEPOSIT', 'DEPOSIT_CD', DEPOSIT_CD) DEPOSIT_TYPE_NM,
+				TO_CHAR(DEPOSIT_DATE, 'YYYY-MM-DD HH24:MI') DEPOSIT_DATE, 
+				SERVICE_NUMBER,
+				SERVICE_ACCOUNT, 
+				RECHARGE, 
+				MINUS_DEPOSIT, 
+				PLUS_DEPOSIT, 
+				REMAINS,
+				ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+				REMARK
+		   ]]>
+		FROM ${db.mainschema}.AGENT_DEPOSIT A
+		WHERE AGENT_ID = #{no}
+			  AND DEPOSIT_DATE >= TO_DATE('20150101', 'YYYYMMDD')
+		
+	</sql>
+	<sql id="agent_deposit_popup_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="agent_deposit_popup_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+		   	fq.SEQ, 
+			fq.AGENT_ID, 
+			fq.DEPOSIT_CD,
+			fq.DEPOSIT_TYPE_NM,
+			fq.DEPOSIT_DATE, 
+			fq.SERVICE_NUMBER,
+			fq.SERVICE_ACCOUNT, 
+			fq.RECHARGE, 
+			fq.MINUS_DEPOSIT, 
+			fq.PLUS_DEPOSIT, 
+			fq.REMAINS,
+			fq.ADMIN_ID,
+			fq.ADMIN_NM,
+			fq.REMARK
+	]]>
+		<include refid="agent_deposit_popup_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="agent_deposit_popup_list" />
+		ORDER BY A.AGENT_ID DESC, A.DEPOSIT_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="agent_deposit_popup_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="agent_deposit_popup_list_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="agent_deposit_popup_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="agent_deposit_popup_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="agent_deposit_popup_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 대리점 정보 얻어옴 -->
+	<select id="agent_deposit_popup_agent_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT AGENT_NAME, REPAYMENT
+			FROM ${db.mainschema}.AGENT A 
+			WHERE AGENT_ID=#{no}
+		]]>
+	</select>
+	
+	<!-- 대리점 예치금수정 -->
+	<select id="agent_deposit_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_AGENT_DEPOSIT(
+		#{agent_id,mode=IN,jdbcType=VARCHAR},
+		#{deposit_cd,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{service_number,mode=IN,jdbcType=VARCHAR},
+		#{recharge,mode=IN,jdbcType=VARCHAR},
+		#{minus_deposit,mode=IN,jdbcType=VARCHAR},
+		#{plus_deposit,mode=IN,jdbcType=VARCHAR},
+		#{remains,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{rcg_seq,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_balance,mode=OUT,jdbcType=INTEGER}
+		)
+	</select>
+	
+</mapper>

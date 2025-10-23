@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.agent_rcg_rate_popup">
+	
+	<sql id="agent_rcg_rate_popup_list">
+	<![CDATA[
+		SELECT *
+		 FROM(
+				(SELECT /*+ INDEX_DESC(A CD_AGENT_RCG_RATE_PK1) */
+						SEQ, 
+						GRP_CD, 
+						TELCO, 
+						RCG_TYPE, 
+						${db.mainschema}.F_GET_COMMON_CD_NM('CD_AGENT_RCG_RATE','RCG_TYPE', RCG_TYPE) RCG_TYPE_NM, 
+						PROD_CD, 
+						NVL(${db.mainschema}.F_GET_SERVICE_CD_NM(PROD_CD), '기본') PROD_CD_NM,
+						RATE_GUBUN, 
+						${db.mainschema}.F_GET_COMMON_CD_NM('CD_AGENT_RCG_RATE','RATE_GUBUN', RATE_GUBUN) RATE_GUBUN_NM, 
+						TO_CHAR(ENTER_DT, 'YYYY/MM/DD') ENTER_DT,
+						${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+						RATE, 
+						(CASE WHEN MIN_AMOUNT = 99999999 THEN 'MAX' ELSE CAST(MIN_AMOUNT AS VARCHAR) END) MIN_AMOUNT
+				FROM ${db.mainschema}.CD_AGENT_RCG_RATE A
+				WHERE SEQ > -20000000 
+					AND GRP_CD = #{grpCd}
+					AND SEQ < 0
+				ORDER BY SEQ DESC)
+				
+				UNION ALL
+				
+				(SELECT /*+ INDEX_DESC(A CD_AGENT_RCG_RATE_PK1) */
+						SEQ, 
+						GRP_CD, 
+						TELCO, 
+						RCG_TYPE, 
+						${db.mainschema}.F_GET_COMMON_CD_NM('CD_AGENT_RCG_RATE','RCG_TYPE', RCG_TYPE) RCG_TYPE_NM, 
+						PROD_CD, 
+						${db.mainschema}.F_GET_SERVICE_CD_NM(PROD_CD) PROD_CD_NM,
+						RATE_GUBUN, 
+						${db.mainschema}.F_GET_COMMON_CD_NM('CD_AGENT_RCG_RATE','RATE_GUBUN', RATE_GUBUN) RATE_GUBUN_NM, 
+						TO_CHAR(ENTER_DT, 'YYYY/MM/DD') ENTER_DT,
+						${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+						RATE, 
+						(CASE WHEN MIN_AMOUNT = 99999999 THEN 'MAX' ELSE CAST(MIN_AMOUNT AS VARCHAR) END) MIN_AMOUNT
+				FROM ${db.mainschema}.CD_AGENT_RCG_RATE A
+				WHERE SEQ > -20000000 
+					AND GRP_CD = #{grpCd}
+					AND SEQ > 0
+				ORDER BY TELCO, RCG_TYPE, PROD_CD, MIN_AMOUNT)
+
+			)
+		 ]]>
+		
+	</sql>
+	<sql id="agent_rcg_rate_popup_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="agent_rcg_rate_popup_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+		   	fq.SEQ, 
+			fq.GRP_CD, 
+			fq.TELCO, 
+			fq.RCG_TYPE, 
+			fq.RCG_TYPE_NM, 
+			fq.PROD_CD, 
+			fq.PROD_CD_NM,
+			fq.RATE_GUBUN, 
+			fq.RATE_GUBUN_NM, 
+			fq.ENTER_DT,
+			fq.ADMIN_NM,
+			fq.RATE, 
+			fq.MIN_AMOUNT
+	]]>
+		<include refid="agent_rcg_rate_popup_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="agent_rcg_rate_popup_list" />
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="agent_rcg_rate_popup_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="agent_rcg_rate_popup_list_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="agent_rcg_rate_popup_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="agent_rcg_rate_popup_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="agent_rcg_rate_popup_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 자동충전정책정보 -->
+	<select id="agent_rcg_rate_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT GRP_CD, 
+					GRP_NM,
+					REMARK
+			FROM ${db.mainschema}.CD_AGENT_RCG_RATE_GRP A 
+			WHERE GRP_CD = #{grpCd}
+		]]>
+	</select>
+	
+	<!-- 요금제정보를 얻어온다 -->
+	<select id="agent_rcg_rate_popup_prod_cd" parameterType="map" resultType="egovMap">
+		SELECT 
+			PROD_CD VAL, 
+			SERVICE_NAME NAME, 
+			TELCO 
+		FROM ${db.mainschema}.CODE_SERVICE_INFO 
+		WHERE SERVICE_TYPE = '1'
+			AND TELCO = '${telco}'
+		
+		<choose>
+			<when test="rcgType != '' and rcgType != null">
+				<choose>
+					<when test='rcgType == "L"'>
+					    AND (
+					    	PROD_CD IN (SELECT SERVICE_CODE FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT)
+					    	OR 
+					    	PROD_CD IN (SELECT PROD_CD FROM CODE_SERVICE_BAND)
+					    )
+					</when>
+					<otherwise>
+						AND PROD_CD NOT IN (SELECT SERVICE_CODE FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT)
+						AND PROD_CD NOT IN (SELECT PROD_CD FROM CODE_SERVICE_BAND)
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		 
+		ORDER BY SERVICE_NAME ASC
+	</select>
+	
+	<!-- 자동충전정책삭제 -->
+	<select id="agent_rcg_rate_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_CD_AGENT_RCG_RATE(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{grpCd,mode=IN,jdbcType=VARCHAR},
+		#{grpNm,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{rcgType,mode=IN,jdbcType=VARCHAR},
+		#{prodCd,mode=IN,jdbcType=VARCHAR},
+		#{rateGubun,mode=IN,jdbcType=VARCHAR},
+		#{rate,mode=IN,jdbcType=VARCHAR},
+		#{minAmount,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

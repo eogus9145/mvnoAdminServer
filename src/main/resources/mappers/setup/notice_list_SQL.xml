@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.notice_list">
+	<sql id="notice_list">
+		(SELECT 
+
+			/*+ index_desc(a BOARD_NOTICE_IDX) */
+			BOARD_SEQ,
+			BOARD_TYPE, 
+			TITLE, 
+			BODY, 
+			VIEW_COUNT, 
+			COMMENT_COUNT,
+			THREAD, 
+			DEPTH, 
+			POS,
+			USER_IMG, 
+			USER_FILE, 
+			USER_IP,
+			EMAIL_FLAG, 
+			EMAIL, 
+			AGENT_ID,
+			OWNER_ID, 
+			NICK_NAME, 
+			PASSWD,
+			ADMIN_ID, 
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE, 
+			OPEN_FLAG,
+			LOCK_FLAG,
+			'Y' TOP_FLAG,
+			READ_FLAG,
+			CASE WHEN RECORD_DATE > NOW() - INTERVAL '7 days' THEN 'Y'
+				ELSE ''
+			END NEW_FLAG,
+			TO_CHAR(OPEN_EXPIRE_DT, 'YYYY-MM-DD') OPEN_EXPIRE_DT,
+			TO_CHAR(TOP_EXPIRE_DT, 'YYYY-MM-DD') TOP_EXPIRE_DT
+
+		FROM ${db.mainschema}.BOARD_NOTICE A 
+		WHERE RECORD_DATE > TO_DATE('20150101', 'YYYYMMDD')
+			AND TOP_FLAG = 'Y'
+			AND (TOP_EXPIRE_DT IS NULL OR TOP_EXPIRE_DT >= DATE_TRUNC('day', NOW()))
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'title'">
+					    AND TITLE LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'body'">
+					    AND BODY LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'nick_name'">
+					    AND NICK_NAME LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		
+		<if test="open_flag != '' and open_flag != null ">
+	   	    AND OPEN_FLAG = #{open_flag}
+   	    </if>
+		ORDER BY A.RECORD_DATE DESC)
+		
+		UNION ALL
+		
+		(SELECT 
+			/*+ index_desc(a BOARD_NOTICE_IDX) */
+			BOARD_SEQ,
+			BOARD_TYPE, 
+			TITLE, 
+			BODY, 
+			VIEW_COUNT, 
+			COMMENT_COUNT,
+			THREAD, 
+			DEPTH, 
+			POS,
+			USER_IMG, 
+			USER_FILE, 
+			USER_IP,
+			EMAIL_FLAG, 
+			EMAIL, 
+			AGENT_ID,
+			OWNER_ID, 
+			NICK_NAME, 
+			PASSWD,
+			ADMIN_ID, 
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE, 
+			OPEN_FLAG,
+			LOCK_FLAG,
+			'N' TOP_FLAG,
+			READ_FLAG,
+			CASE WHEN RECORD_DATE > NOW() - INTERVAL '7 days' THEN 'Y'
+				ELSE ''
+			END NEW_FLAG,
+			TO_CHAR(OPEN_EXPIRE_DT, 'YYYY-MM-DD') OPEN_EXPIRE_DT,
+			TO_CHAR(TOP_EXPIRE_DT, 'YYYY-MM-DD') TOP_EXPIRE_DT
+		FROM ${db.mainschema}.BOARD_NOTICE A 
+		WHERE RECORD_DATE > TO_DATE('20150101', 'YYYYMMDD')
+			AND (TOP_FLAG = 'N' OR (TOP_FLAG = 'Y' AND TOP_EXPIRE_DT &lt; DATE_TRUNC('day', NOW())))
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'title'">
+					    AND TITLE LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'body'">
+					    AND BODY LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'nick_name'">
+					    AND NICK_NAME LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		
+		<if test="open_flag != '' and open_flag != null ">
+	   	    AND OPEN_FLAG = #{open_flag}
+   	    </if>  
+		ORDER BY A.RECORD_DATE DESC)
+	</sql>
+	<sql id="notice_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="notice_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="notice_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BOARD_SEQ,
+			fq.BOARD_TYPE, 
+			fq.TITLE, 
+			fq.BODY, 
+			fq.VIEW_COUNT, 
+			fq.COMMENT_COUNT,
+			fq.THREAD, 
+			fq.DEPTH, 
+			fq.POS,
+			fq.USER_IMG, 
+			fq.USER_FILE, 
+			fq.USER_IP,
+			fq.EMAIL_FLAG, 
+			fq.EMAIL, 
+			fq.AGENT_ID,
+			fq.OWNER_ID, 
+			fq.NICK_NAME, 
+			fq.PASSWD,
+			fq.ADMIN_ID, 
+			fq.ADMIN_NM,
+			fq.RECORD_DATE, 
+			fq.OPEN_FLAG,
+			fq.LOCK_FLAG,
+			fq.TOP_FLAG,
+			fq.READ_FLAG,
+			fq.NEW_FLAG,
+			fq.OPEN_EXPIRE_DT,
+			fq.TOP_EXPIRE_DT
+
+	]]>
+		<include refid="notice_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="notice_list" />
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="notice_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="notice_list_add" /><![CDATA[
+	            ]]><include refid="notice_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="notice_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="notice_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="notice_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

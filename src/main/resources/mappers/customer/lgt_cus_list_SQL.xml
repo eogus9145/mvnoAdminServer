@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.lgt_cus_list">
+	<sql id="lgt_cus_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A LGT_CUS_PK) */
+		    CUSTOMER_ID, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CUSTTP', CUSTTP), CUSTTP) CUSTTP_NM,
+		    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') CSSN,
+		    ${db.mainschema}.AES256LOCALDEC(DRIVLICNO) DRIVLICNO,
+		    ${db.mainschema}.AES256LOCALDEC(TAXID) TAXID,
+		    CADDRZIP,
+		    CPRMADDRLN,
+		    CSECADDRLN,
+		    CNMLOB,
+		    CO_REPT_NM,
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'OCCUPCD', OCCUPCD), OCCUPCD) OCCUPCD_NM,
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CINDTIND', CINDTIND), CINDTIND) CINDTIND_NM,
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'ADDR_TYP', ADDR_TYP), ADDR_TYP) ADDR_TYP_NM,
+		    STAY_QUALF_NM,
+		    TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT,
+		    NAT_NM,
+		    BIZ_TYP_NM,
+		    BIZ_ITEM_NM,
+		    AD_RCP_AGRMT_YN,
+		    THPT_OFFER_AGRMT_YN
+		FROM ${db.mainschema}.LGT_CUS A
+		WHERE CUSTOMER_ID >= '0'
+		
+	 	]]>
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'contract_num'">
+					    AND A.CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_SUB WHERE CONTRACT_NUM = #{sword}) 
+					</when>
+					<when test="sst == 'service_number'">
+						AND A.CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_SUB WHERE (SERVICE_NUMBER = #{sword} OR SERVICE_NUMBER = '010' || #{sword}) )
+					</when>
+					<when test="sst == 'customer_id'">
+						AND A.CUSTOMER_ID = #{sword}
+					</when>
+					<when test="sst == 'cnmlob'">
+					  	AND CNMLOB LIKE '%'||UPPER(#{sword})||'%'
+					</when>
+					<when test="sst == 'cssn'">
+						AND A.CSSN = ${db.mainschema}.AES256LOCALENC(#{sword}) 
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_multi_select_query("A.CUSTTP", custtp)}
+		${@telecentro.common.service.CommonUtil@get_multi_select_query("A.STAY_QUALF_CD", stay_qualf_cd)}
+
+   	    <if test="cindtind != '' and cindtind != null ">
+	   	    AND A.CINDTIND = #{cindtind}
+   	    </if>
+   	    
+		<choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				AND A.CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_SUB WHERE LSTCOMACTVDATE >= TO_DATE(#{s_dt}, 'YYYY-MM-DD') AND LSTCOMACTVDATE &lt;= TO_DATE(#{e_dt}, 'YYYY-MM-DD') + 1)
+			</when>
+			<otherwise>
+				AND A.CUSTOMER_ID = '999999999999999999999'
+			</otherwise>
+		</choose>
+   	    
+	</sql>
+	<sql id="lgt_cus_list_add">
+	<![CDATA[
+		, (SELECT COUNT(*) FROM ${db.mainschema}.LGT_SUB WHERE CUSTOMER_ID = fq.CUSTOMER_ID AND STATUS IN ('A', 'S')) SUB_CNT
+	]]>
+	</sql>
+	<sql id="lgt_cus_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="lgt_cus_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.CUSTOMER_ID, 
+		    fq.CUSTTP_NM,
+		    fq.CSSN,
+		    fq.DRIVLICNO,
+		    fq.TAXID,
+		    fq.CADDRZIP,
+		    fq.CPRMADDRLN,
+		    fq.CSECADDRLN,
+		    fq.CNMLOB,
+		    fq.CO_REPT_NM,
+		    fq.OCCUPCD_NM,
+		    fq.CINDTIND_NM,
+		    fq.ADDR_TYP_NM,
+		    fq.STAY_QUALF_NM,
+		    fq.STAY_EXPIR_DT,
+		    fq.NAT_NM,
+		    fq.BIZ_TYP_NM,
+		    fq.BIZ_ITEM_NM,
+		    fq.AD_RCP_AGRMT_YN,
+		    fq.THPT_OFFER_AGRMT_YN
+	]]>
+		<include refid="lgt_cus_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="lgt_cus_list" />
+		ORDER BY A.CUSTOMER_ID DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="lgt_cus_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="lgt_cus_list_add" /><![CDATA[
+	            ]]><include refid="lgt_cus_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="lgt_cus_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="lgt_cus_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="lgt_cus_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

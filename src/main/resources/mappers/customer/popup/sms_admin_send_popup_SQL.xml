@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.sms_admin_send_popup">
+
+	<select id="sms_admin_send_popup_service_number" parameterType="map" resultType="egovMap">
+		SELECT 
+			${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', #{telco}, #{account}) NO_MASK_SERVICE_NUMBER 
+	</select>
+
+	<select id="sms_admin_send_popup_gubun1" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT GUBUN1 
+			 FROM ${db.mainschema}.ADMIN_SMS 
+			 WHERE GUBUN1 <> '나만보기'
+					AND AGENT_ID IS NULL
+			 GROUP BY GUBUN1
+		UNION ALL
+		SELECT GUBUN1 
+			 FROM ${db.mainschema}.ADMIN_SMS 
+			 WHERE GUBUN1 = '나만보기'
+			 AND ADMIN_ID = #{SESSION_ADM_ID}
+			 GROUP BY GUBUN1
+		]]>
+	</select>
+	
+	<select id="sms_admin_send_popup_gubun2" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT SEQ, GUBUN2 
+		 FROM ${db.mainschema}.ADMIN_SMS
+		 WHERE GUBUN1 = #{gubun1} 
+			   AND AGENT_ID IS NULL
+		 ORDER BY GUBUN2
+		]]>
+	</select>
+	
+	<select id="sms_admin_send_popup_msg" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT
+		 	 SEQ, 
+			 TEXT,
+			 CALLBACK
+		 FROM ${db.mainschema}.ADMIN_SMS 
+		 WHERE AGENT_ID IS NULL
+		 	AND GUBUN1 = #{gubun1} 
+			AND GUBUN2 = #{gubun2}
+		]]>
+	</select>
+	
+	<select id="sms_admin_send_popup_send" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_SMS(
+		#{i_telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{receive_num,mode=IN,jdbcType=VARCHAR},
+		#{callback_num,mode=IN,jdbcType=VARCHAR},
+		#{send_msg,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="sms_admin_send_popup_msg_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_SMS_EDIT(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{gubun1,mode=IN,jdbcType=VARCHAR},
+		#{gubun2,mode=IN,jdbcType=VARCHAR},
+		#{send_msg,mode=IN,jdbcType=VARCHAR},
+		#{callback_num,mode=IN,jdbcType=VARCHAR},
+		#{i_agent_id,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="sms_admin_message_popup_get" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT CALLBACK, GUBUN1, GUBUN2, TEXT
+		FROM ${db.mainschema}.ADMIN_SMS
+		WHERE SEQ = CAST(#{seq} AS BIGINT)
+		]]>
+	</select>
+	
+</mapper>

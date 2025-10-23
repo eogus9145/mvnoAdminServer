@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_dual_chk_popup">
+
+	<!-- 블랙고객조회 -->
+	<select id="customer_dual_chk_popup_block" parameterType="map" resultType="egovMap">
+		
+			SELECT /*+ INDEX_DESC(A CUSTOMER_BLACK_PK) */
+					${db.mainschema}.AES256LOCALDEC(CUSTOMER_SSN) USER_SSN, 
+					CUSTOMER_NAME, 
+					${db.mainschema}.F_GET_CUSTOMER_INFO('PROD_CD_NM', 'ALL', SERVICE_ACCOUNT) PROD_CD_NM,
+					BLACK_CD, 
+					${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'BLACK_CD', BLACK_CD) BLACK_CD_NM,
+					STATUS, 
+					${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'STATUS', STATUS) STATUS_NM,
+					OPEN_FLAG, 
+					TO_CHAR(ENTER_DT, 'YYYY-MM-DD')ENTER_DT, 
+					TELCO, 
+					SERVICE_ACCOUNT, 
+					DESC_INFO, 
+					ADMIN_ID, 
+					CASE WHEN TELCO = 'LGT' THEN (SELECT ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', STATUS) FROM ${db.mainschema}.LGT_SUB WHERE CONTRACT_NUM = A.SERVICE_ACCOUNT) 
+						 ELSE ''
+					END SUB_STATUS,
+					${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'ALL', A.SERVICE_ACCOUNT) SERVICE_TYPE,
+					${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'ALL', A.SERVICE_ACCOUNT)) SERVICE_TYPE_NM
+			FROM ${db.mainschema}.CUSTOMER_BLACK A
+			WHERE STATUS = 'A'
+			  
+			<if test="black_name != '' and black_name != null ">
+				AND (CUSTOMER_NAME = UPPER(#{black_name}) OR CUSTOMER_NAME = LOWER(#{black_name}) )
+	   	    </if>
+	   	    
+	   	    <if test="black_ssn != '' and black_ssn != null ">
+	   	    	AND CUSTOMER_SSN = ${db.mainschema}.AES256LOCALENC(#{black_ssn}) 
+	   	    </if>
+	   	    
+	   	    <if test="(black_name == '' or black_name == null) and (black_ssn == '' or black_ssn == null) ">
+	   	    	AND SERVICE_ACCOUNT = '99999999999999999999999999999999999999999'
+	   	    </if>
+			
+	</select>
+	
+	<!-- 중복고객조회 -->
+	<select id="customer_dual_chk_popup_dual" parameterType="map" resultType="egovMap">
+		
+			SELECT 
+				SERVICE_ACCOUNT,
+				TELCO,
+				ENC_CTZ_CORP_NUM,
+				CUST_FRST_NM,
+				PROD_CD_NM,
+				SUB_STATUS_NM,
+				OPEN_DATE,
+				AGENT_ID, 
+				AGENT_NM, 
+				CHG_DT,
+				CHG_RSN,
+				SERVICE_TYPE,
+				SERVICE_TYPE_NM
+			FROM(
+				SELECT 
+						A.SERVICE_ACCOUNT,
+						'LGT' TELCO,
+						${db.mainschema}.AES256LOCALDEC(CSSN) ENC_CTZ_CORP_NUM,
+						CNMLOB CUST_FRST_NM,
+						${db.mainschema}.F_GET_SERVICE_CD_NM(A.SERVICE_CODE) PROD_CD_NM,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', B.STATUS) SUB_STATUS_NM,
+						TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD') OPEN_DATE,
+						A.AGENT_ID, 
+						${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.AGENT_ID) AGENT_NM, 
+						CASE WHEN B.STATUS = 'A' THEN ''
+							WHEN B.STATUS = 'S' THEN TO_CHAR(STOP_DT, 'YYYY-MM-DD')
+							WHEN B.STATUS = 'C' THEN TO_CHAR(CANCEL_DT, 'YYYY-MM-DD')
+							ELSE ''
+						END CHG_DT,
+						CASE WHEN B.STATUS = 'A' THEN ''
+							WHEN B.STATUS = 'S' THEN ${db.mainschema}.F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'SUS', STOP_CD) 
+							WHEN B.STATUS = 'C' THEN ${db.mainschema}.F_GET_COMMON_CD_2_NM('LGT_SUB', 'RSNCD', 'CAN', CANCEL_CD) 
+							ELSE ''
+						END CHG_RSN,
+						SERVICE_TYPE,
+						${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM
+				 FROM ${db.mainschema}.CUSTOMER_LGT A,
+					  ${db.mainschema}.LGT_SUB B,
+					  ${db.mainschema}.LGT_CUS C
+				 WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+						AND B.CUSTOMER_ID = C.CUSTOMER_ID
+				  
+				<if test="black_name != '' and black_name != null ">
+					AND (CNMLOB = UPPER(#{black_name}) OR CNMLOB = LOWER(#{black_name}) ) 
+		   	    </if>
+		   	    
+		   	    <if test="black_ssn != '' and black_ssn != null ">
+		   	    	AND (CSSN = ${db.mainschema}.AES256LOCALENC(#{black_ssn}) OR CSSN = ${db.mainschema}.AES256LOCALENC(#{black_ssn} || '000000') OR USSN = ${db.mainschema}.AES256LOCALENC(#{black_ssn}) OR USSN = ${db.mainschema}.AES256LOCALENC(#{black_ssn} || '000000') )
+		   	    </if>
+		   	    
+		   	    <if test="(black_name == '' or black_name == null) and (black_ssn == '' or black_ssn == null) ">
+		   	    	AND A.SERVICE_ACCOUNT = '99999999999999999999999999999999999999999'
+		   	    </if>
+		   	    
+		   	    UNION ALL
+		   	    
+		   	    SELECT 
+						A.SERVICE_ACCOUNT,
+						'SKT' TELCO,
+						AES256LOCALDEC(ENC_CTZ_CORP_NUM) ENC_CTZ_CORP_NUM,
+						CUST_FRST_NM CUST_FRST_NM,
+						F_GET_SERVICE_CD_NM(A.PROD_CD) PROD_CD_NM,
+						F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STATUS', B.STATUS) SUB_STATUS_NM,
+						TO_CHAR(A.OPEN_DATE, 'YYYY-MM-DD') OPEN_DATE,
+						B.AGENT_ID, 
+						F_GET_AGENT_INFO('AGENT_NAME', B.AGENT_ID) AGENT_NM, 
+						CASE WHEN B.STATUS = 'A' THEN ''
+							WHEN B.STATUS = 'S' THEN TO_CHAR(STOP_DT, 'YYYY-MM-DD')
+							WHEN B.STATUS = 'C' THEN TO_CHAR(CANCEL_DT, 'YYYY-MM-DD')
+							ELSE ''
+						END CHG_DT,
+						CASE WHEN B.STATUS = 'A' THEN ''
+							WHEN B.STATUS = 'S' THEN F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STOP_RSN_CD', STOP_RSN_CD) 
+							WHEN B.STATUS = 'C' THEN F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'CANCEL_RSN_CD', CANCEL_RSN_CD) 
+							ELSE ''
+						END CHG_RSN,
+						SERVICE_TYPE,
+						F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM
+				 FROM SKT_CUSTOMER A,
+					  CUSTOMER_SKT B
+				 WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+				  
+				<if test="black_name != '' and black_name != null ">
+					AND (CUST_FRST_NM = UPPER(#{black_name}) OR CUST_FRST_NM = LOWER(#{black_name}) ) 
+		   	    </if>
+		   	    
+		   	    <if test="black_ssn != '' and black_ssn != null ">
+		   	    	AND (ENC_CTZ_CORP_NUM = ${db.mainschema}.AES256LOCALENC(#{black_ssn}) OR ENC_CTZ_CORP_NUM = ${db.mainschema}.AES256LOCALENC(#{black_ssn} || '000000'))
+		   	    </if>
+		   	    
+		   	    <if test="(black_name == '' or black_name == null) and (black_ssn == '' or black_ssn == null) ">
+		   	    	AND A.SERVICE_ACCOUNT = '99999999999999999999999999999999999999999'
+		   	    </if>
+		   	    
+		   	) AA
+		   	ORDER BY AA.OPEN_DATE DESC
+			
+	</select>
+	
+</mapper>

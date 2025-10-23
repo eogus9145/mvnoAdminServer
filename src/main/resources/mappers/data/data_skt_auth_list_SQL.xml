@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.data_skt_auth_list">
+	<sql id="data_skt_auth_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_AUTH_IDX1) */
+			   	MVNO_CO_CD,
+				SVC_NUM SERVICE_NUMBER,
+				SVC_MGMT_NUM SERVICE_ACCOUNT,
+				CUST_MGMT_NO,
+				ID_PG,
+				PG_NAME,
+				ID_PG_SUB,
+				PG_SUB_NAME,
+				CD_CP,
+				NM_CP,
+				SITE_NAME,
+				URL_CP,
+				TO_CHAR(AUTH_DTM,'YYYY/MM/DD HH24:MI:SS') AUTH_DTM,
+				AUTH_RESULT,
+				F_GET_COMMON_CD_NM('SKT_AUTH', 'AUTH_RESULT', AUTH_RESULT) AUTH_RESULT_NM,
+				RECORD_DATE,
+				FILE_NAME,
+				ERR
+			FROM SKT_AUTH A 
+			WHERE AUTH_DTM > TO_DATE('20180901', 'YYYYMMDD')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SVC_MGMT_NUM = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SVC_MGMT_NUM = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SVC_MGMT_NUM = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("AUTH_DTM", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="data_skt_auth_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_auth_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_auth_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.MVNO_CO_CD,
+			fq.SERVICE_NUMBER,
+			fq.SERVICE_ACCOUNT,
+			fq.CUST_MGMT_NO,
+			fq.ID_PG,
+			fq.PG_NAME,
+			fq.ID_PG_SUB,
+			fq.PG_SUB_NAME,
+			fq.CD_CP,
+			fq.NM_CP,
+			fq.SITE_NAME,
+			fq.URL_CP,
+			fq.AUTH_DTM,
+			fq.AUTH_RESULT,
+			fq.AUTH_RESULT_NM,
+			fq.RECORD_DATE,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+		<include refid="data_skt_auth_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_auth_list" />
+			ORDER BY A.AUTH_DTM DESC, A.SVC_MGMT_NUM DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_auth_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_auth_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_auth_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_auth_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_auth_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_auth_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

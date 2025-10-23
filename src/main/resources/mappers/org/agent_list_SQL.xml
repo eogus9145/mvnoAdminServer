@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.agent_list">
+	<sql id="agent_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A AGENT_IDX1) */
+		   		AGENT_ID,
+				AGENT_NAME,
+				AGENT_TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('AGENT','AGENT_TYPE', AGENT_TYPE) AGENT_TYPE_NM,
+				HIGH_AGENT,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', HIGH_AGENT) HIGH_AGENT_NAME,
+				SHOP_ID,
+				OWNER_NAME,
+				ZIPCODE_O,
+				ADDRESS_O_1,
+				ADDRESS_O_2 ADDR_INFO,
+				${db.mainschema}.F_FORMAT_PH(PHONE_O, 'N') PHONE_O,
+				${db.mainschema}.F_FORMAT_PH(MOBILE, 'N') MOBILE,
+				EMAIL,
+				REPAYMENT,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('AGENT','STATUS', STATUS) STATUS_NM,
+				TO_CHAR(RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE,
+				TO_CHAR(CONTRACT_DATE, 'YYYY-MM-DD') CONTRACT_DATE,
+				RCG_AUTO_GRP,
+				${db.mainschema}.F_GET_RCG_AUTO_GRP_INFO('GRP_NM', RCG_AUTO_GRP) RCG_AUTO_GRP_NM,
+				RCG_RATE_GRP,
+				${db.mainschema}.F_GET_RCG_RATE_GRP_INFO('GRP_NM', RCG_RATE_GRP) RCG_RATE_GRP_NM,
+				REMARK,
+				TO_CHAR(DEL_DATE, 'YYYY-MM-DD') DEL_DATE,
+				DEL_RSN,
+				(SELECT COUNT(*) FROM ${db.mainschema}.AGENT_DOC WHERE AGENT_ID = A.AGENT_ID AND USABLE = 'U') IMG_CNT
+		   ]]>
+		FROM ${db.mainschema}.AGENT A
+		WHERE RECORD_DATE > TO_DATE('2015-01-01','YYYY-MM-DD')
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'agent'">
+					    AND (AGENT_NAME LIKE '%' || #{sword} || '%' OR AGENT_ID LIKE '%' || #{sword} || '%')
+					</when>
+					<when test="sst == 'mobile'">
+						AND (MOBILE = #{sword} OR MOBILE = '010' || #{sword})
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("RECORD_DATE", null, s_dt, e_dt, "Y", null)}
+		
+		<if test="s_repayment != '' and s_repayment != null ">
+	   	    AND REPAYMENT >= #{s_repayment}
+   	    </if>
+   	    
+   	    <if test="e_repayment != '' and e_repayment != null ">
+	   	    AND REPAYMENT &lt;= #{e_repayment}
+   	    </if>
+   	    
+   	    <if test="agent_id != '' and agent_id != null ">
+	   	    AND (AGENT_ID = #{agent_id} OR HIGH_AGENT = #{agent_id})
+   	    </if>
+   	    
+   	    <if test="stype != '' and stype != null ">
+	   	    AND AGENT_TYPE = #{stype}
+   	    </if>
+   	    
+   	    <if test="sstatus != '' and sstatus != null ">
+	   	    AND STATUS = #{sstatus}
+   	    </if>
+   	    
+   	    <if test="rcg_auto_grp != '' and rcg_auto_grp != null ">
+	   	    AND RCG_AUTO_GRP = #{rcg_auto_grp}
+   	    </if>
+   	    
+   	    <if test="rcg_rate_grp != '' and rcg_rate_grp != null ">
+	   	    AND RCG_RATE_GRP = #{rcg_rate_grp}
+   	    </if>
+		
+	</sql>
+	<sql id="agent_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="agent_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="agent_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+		   	fq.AGENT_ID,
+			fq.AGENT_NAME,
+			fq.AGENT_TYPE,
+			fq.AGENT_TYPE_NM,
+			fq.HIGH_AGENT,
+			fq.HIGH_AGENT_NAME,
+			fq.SHOP_ID,
+			fq.OWNER_NAME,
+			fq.ZIPCODE_O,
+			fq.ADDRESS_O_1,
+			fq.ADDR_INFO,
+			fq.PHONE_O,
+			fq.MOBILE,
+			fq.EMAIL,
+			fq.REPAYMENT,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.RECORD_DATE,
+			fq.CONTRACT_DATE,
+			fq.RCG_AUTO_GRP,
+			fq.RCG_AUTO_GRP_NM,
+			fq.RCG_RATE_GRP,
+			fq.RCG_RATE_GRP_NM,
+			fq.REMARK,
+			fq.DEL_DATE,
+			fq.DEL_RSN,
+			fq.IMG_CNT
+	]]>
+		<include refid="agent_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="agent_list" />
+		ORDER BY A.RECORD_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="agent_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="agent_list_add" /><![CDATA[
+	            ]]><include refid="agent_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="agent_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="agent_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="agent_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<select id="agent_list_file_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+			IMAGE_1,
+			IMAGE_2,
+			IMAGE_3,
+			IMAGE_4,
+			IMAGE_5
+		FROM ${db.mainschema}.AGENT
+		WHERE AGENT_ID = #{agent_id} 
+		]]>
+	</select>
+</mapper>

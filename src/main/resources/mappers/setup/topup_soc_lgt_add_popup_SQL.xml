@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.topup_soc_lgt_add_popup">
+	
+	<!-- lgt정액요금제관리 정보조회 -->
+	<select id="topup_soc_lgt_add_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 	
+			SERVICE_CODE,
+		    RCG_AMT,
+		    SMS_DESC
+		FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT A
+		WHERE SERVICE_CODE = #{no}
+		]]>
+	</select>
+	
+	<!-- lgt정액요금제관리 등록/수정/삭제 -->
+	<select id="topup_soc_lgt_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CD_LGT_TOPUP(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{serviceCode,mode=IN,jdbcType=VARCHAR},
+		#{rcgAmt,mode=IN,jdbcType=VARCHAR},
+		#{smsDesc,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

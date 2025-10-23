@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_feature_list_popup_frame">
+	<sql id="customer_lgt_view_feature_list_popup_frame">
+		<![CDATA[
+			SELECT 
+			    /*+ INDEX_DESC(A LGT_FEATURE_PK )*/
+			    SERVICE_CODE,
+			    ${db.mainschema}.F_GET_SERVICE_CD_NM(SERVICE_CODE) SERVICE_CODE_NM, 
+			    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_FEATURE', 'SRVTP', SRVTP), SRVTP) SRVTP_NM, 
+			    TO_CHAR(TO_DATE(EFFDT, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') EFFDT, 
+			    SVCCN, 
+			    PRDC_CONT_CD, 
+			    PRDC_CONT_NM, 
+			    PRDC_CONT_MTH_CNT, 
+			    DC_PROD_MTH_AMT
+			FROM ${db.mainschema}.LGT_FEATURE A
+			WHERE CONTRACT_NUM >= '0'
+			    AND EXPDT > TO_CHAR(NOW(), 'YYYYMMDDHH24MISS')
+			 	AND CONTRACT_NUM = #{account}
+		]]>
+	</sql>
+	<sql id="customer_lgt_view_feature_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	
+	<select id="customer_lgt_view_feature_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SERVICE_CODE, 
+			fq.SERVICE_CODE_NM, 
+		    fq.SRVTP_NM, 
+		    fq.EFFDT, 
+		    fq.SVCCN, 
+		    fq.PRDC_CONT_CD, 
+		    fq.PRDC_CONT_NM, 
+		    fq.PRDC_CONT_MTH_CNT, 
+		    fq.DC_PROD_MTH_AMT
+	]]>
+		<include refid="customer_lgt_view_feature_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_view_feature_list_popup_frame" />
+		ORDER BY A.CONTRACT_NUM DESC, A.SERVICE_CODE DESC, A.FTRCD DESC, A.SRVTP DESC, A.EFFDT DESC, A.EXPDT DESC, A.CHGCD DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_feature_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_feature_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_feature_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_feature_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_feature_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

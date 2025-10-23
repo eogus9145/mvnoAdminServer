@@ -1,0 +1,328 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_all_search_popup">
+
+	<!-- 통합검색 가입자내역 -->
+	<select id="customer_all_search_list1" parameterType="map" resultType="egovMap">
+	
+		<![CDATA[
+		SELECT 
+		    TELCO,
+		    SERVICE_ACCOUNT,
+		    SERVICE_NUMBER,
+		    CNMLOB,
+		    CSSN,
+		    ENTER_DATE,
+		    SERVICE_TYPE_NM,
+		    AGENT_NAME,
+		    PROD_CD_NM
+		FROM(
+			SELECT 
+			    'LGT' TELCO,
+			    A.CONTRACT_NUM SERVICE_ACCOUNT,
+			    ${db.mainschema}.F_FORMAT_PH(A.SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+			    CNMLOB,
+			    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') CSSN,
+			    TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD') ENTER_DATE,
+			    ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', B.SERVICE_TYPE) SERVICE_TYPE_NM,
+			    ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME,
+			    ${db.mainschema}.F_GET_SERVICE_CD_NM(B.SERVICE_CODE) PROD_CD_NM
+			FROM ${db.mainschema}.LGT_SUB A,
+			     ${db.mainschema}.CUSTOMER_LGT B,
+			     ${db.mainschema}.LGT_CUS C
+			WHERE A.CONTRACT_NUM = B.SERVICE_ACCOUNT
+			      AND A.CUSTOMER_ID = C.CUSTOMER_ID
+			      AND STATUS IN ('A', 'S')
+			
+			]]>
+			
+			<choose>
+				<when test="(service_number_arr != '' and service_number_arr != null) or (ssn_arr != '' and ssn_arr != null)">
+					AND (
+						<if test="service_number_arr != '' and service_number_arr != null">
+							SERVICE_NUMBER IN (${service_number_arr})
+						</if>
+						<if test="service_number_arr != '' and service_number_arr != null and ssn_arr != '' and ssn_arr != null">
+							OR
+						</if>
+						<if test="ssn_arr != '' and ssn_arr != null">
+							(CSSN IN (${ssn_arr}) OR USSN IN (${ssn_arr}))
+						</if>
+					)
+				</when>
+				<otherwise>
+					<if test="service_number != '' and service_number != null">
+						AND SERVICE_NUMBER IN (${service_number})
+					</if>
+					<if test="service_account != '' and service_account != null">
+						AND A.CONTRACT_NUM IN (${service_account})
+					</if>
+					<if test="ssn != '' and ssn != null">
+						AND (CSSN IN (${ssn}) OR USSN IN (${ssn}))
+					</if>
+					<if test="customer_name != '' and customer_name != null">
+						AND CNMLOB IN (UPPER(#{customer_name}))
+					</if>
+				</otherwise>
+			</choose>
+			
+			UNION ALL
+	   	    
+	   	    SELECT 
+			    'SKT' TELCO,
+			    A.SERVICE_ACCOUNT SERVICE_ACCOUNT,
+			    F_FORMAT_PH(A.SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+			    CUST_FRST_NM CNMLOB,
+			    AES256LOCALDEC(ENC_CTZ_CORP_NUM) CSSN,
+			    TO_CHAR(OPEN_DATE, 'YYYY-MM-DD') ENTER_DATE,
+			    F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM,
+			    F_GET_AGENT_INFO('AGENT_NAME', B.AGENT_ID) AGENT_NAME,
+			    F_GET_SERVICE_CD_NM(A.PROD_CD) PROD_CD_NM
+			FROM SKT_CUSTOMER A,
+			     CUSTOMER_SKT B
+			WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+			      AND STATUS IN ('A', 'S')
+			
+			<choose>
+				<when test="(service_number_arr != '' and service_number_arr != null) or (ssn_arr != '' and ssn_arr != null)">
+					AND (
+						<if test="service_number_arr != '' and service_number_arr != null">
+							SERVICE_NUMBER IN (${service_number_arr})
+						</if>
+						<if test="service_number_arr != '' and service_number_arr != null and ssn_arr != '' and ssn_arr != null">
+							OR
+						</if>
+						<if test="ssn_arr != '' and ssn_arr != null">
+							ENC_CTZ_CORP_NUM IN (${ssn_arr})
+						</if>
+					)
+				</when>
+				<otherwise>
+					<if test="service_number != '' and service_number != null">
+						AND SERVICE_NUMBER IN (${service_number})
+					</if>
+					<if test="service_account != '' and service_account != null">
+						AND A.SERVICE_ACCOUNT IN (${service_account})
+					</if>
+					<if test="ssn != '' and ssn != null">
+						AND ENC_CTZ_CORP_NUM IN (${ssn})
+					</if>
+					<if test="customer_name != '' and customer_name != null">
+						AND CUST_FRST_NM IN (UPPER(#{customer_name}))
+					</if>
+				</otherwise>
+			</choose>
+			
+	   	) AA
+	   	ORDER BY AA.ENTER_DATE DESC
+		      
+	</select>
+	
+	<!-- 통합검색 해지자내역 -->
+	<select id="customer_all_search_list2" parameterType="map" resultType="egovMap">
+	
+		<![CDATA[
+		SELECT 
+		    TELCO,
+		    SERVICE_ACCOUNT,
+		    SERVICE_NUMBER,
+		    CNMLOB,
+		    CSSN,
+		    ENTER_DATE,
+		    CANCEL_DT,
+		    SERVICE_TYPE_NM,
+		    AGENT_NAME,
+		    PROD_CD_NM
+		FROM(
+			SELECT 
+			    'LGT' TELCO,
+			    A.CONTRACT_NUM SERVICE_ACCOUNT,
+			    ${db.mainschema}.F_FORMAT_PH(A.SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+			    CNMLOB,
+			    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') CSSN,
+			    TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD') ENTER_DATE,
+			    TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT,
+			    ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', B.SERVICE_TYPE) SERVICE_TYPE_NM,
+			    ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME,
+			    ${db.mainschema}.F_GET_SERVICE_CD_NM(B.SERVICE_CODE) PROD_CD_NM
+			FROM ${db.mainschema}.LGT_SUB A,
+			     ${db.mainschema}.CUSTOMER_LGT B,
+			     ${db.mainschema}.LGT_CUS C
+			WHERE A.CONTRACT_NUM = B.SERVICE_ACCOUNT
+			      AND A.CUSTOMER_ID = C.CUSTOMER_ID
+			      AND STATUS = 'C'
+			]]>
+					
+			<choose>
+				<when test="(service_number_arr != '' and service_number_arr != null) or (ssn_arr != '' and ssn_arr != null)">
+					AND (
+						<if test="service_number_arr != '' and service_number_arr != null">
+							SERVICE_NUMBER IN (${service_number_arr})
+						</if>
+						<if test="service_number_arr != '' and service_number_arr != null and ssn_arr != '' and ssn_arr != null">
+							OR
+						</if>
+						<if test="ssn_arr != '' and ssn_arr != null">
+							(CSSN IN (${ssn_arr}) OR USSN IN (${ssn_arr}) )
+						</if>
+					)
+				</when>
+				<otherwise>
+					<if test="service_number != '' and service_number != null ">
+				   	    AND SERVICE_NUMBER IN (${service_number})
+			   	    </if>
+			   	    <if test="service_account != '' and service_account != null ">
+				   	    AND A.CONTRACT_NUM IN (${service_account})
+			   	    </if>
+			   	    <if test="ssn != '' and ssn != null ">
+			   	    	AND (CSSN IN (${ssn}) OR USSN IN (${ssn}) )
+			   	    </if>
+			   	    <if test="customer_name != '' and customer_name != null ">
+				   	    AND CNMLOB IN (UPPER(#{customer_name}))
+			   	    </if>
+				</otherwise>
+			</choose>
+			
+	   	    UNION ALL
+			
+			SELECT 
+			    'SKT' TELCO,
+			    A.SERVICE_ACCOUNT SERVICE_ACCOUNT,
+			    F_FORMAT_PH(A.SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+			    CUST_FRST_NM CNMLOB,
+			    AES256LOCALDEC(ENC_CTZ_CORP_NUM) CSSN,
+			    TO_CHAR(OPEN_DATE, 'YYYY-MM-DD') ENTER_DATE,
+			    TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT,
+			    F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM,
+			    F_GET_AGENT_INFO('AGENT_NAME', B.AGENT_ID) AGENT_NAME,
+			    F_GET_SERVICE_CD_NM(A.PROD_CD) PROD_CD_NM
+			FROM SKT_CUSTOMER A,
+			     CUSTOMER_SKT B
+			WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+			      AND STATUS = 'C'
+			<choose>
+				<when test="(service_number_arr != '' and service_number_arr != null) or (ssn_arr != '' and ssn_arr != null)">
+					AND (
+						<if test="service_number_arr != '' and service_number_arr != null">
+							SERVICE_NUMBER IN (${service_number_arr})
+						</if>
+						<if test="service_number_arr != '' and service_number_arr != null and ssn_arr != '' and ssn_arr != null">
+							OR
+						</if>
+						<if test="ssn_arr != '' and ssn_arr != null">
+							ENC_CTZ_CORP_NUM IN (${ssn_arr})
+						</if>
+					)
+				</when>
+				<otherwise>
+					<if test="service_number != '' and service_number != null ">
+				   	    AND SERVICE_NUMBER IN (${service_number})
+			   	    </if>
+			   	    <if test="service_account != '' and service_account != null ">
+				   	    AND A.SERVICE_ACCOUNT IN (${service_account})
+			   	    </if>
+			   	    <if test="ssn != '' and ssn != null ">
+			   	    	AND ENC_CTZ_CORP_NUM IN (${ssn})
+			   	    </if>
+			   	    <if test="customer_name != '' and customer_name != null ">
+				   	    AND CUST_FRST_NM IN (UPPER(#{customer_name}))
+			   	    </if>
+				</otherwise>
+			</choose>
+
+	   	    <choose>
+				<when test='can_yn == "Y"'>
+				  	AND B.CANCEL_DT >= CURRENT_DATE - INTERVAL '6 months' 
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+		) AA
+		ORDER BY AA.CANCEL_DT DESC
+			
+	</select>
+	
+	<!-- 통합검색 번호변경 -->
+	<select id="customer_all_search_list3" parameterType="map" resultType="egovMap">
+	
+		<![CDATA[
+		SELECT 
+		    TELCO,
+		    SERVICE_ACCOUNT,
+		    ${db.mainschema}.F_FORMAT_PH(OLD_CTN, 'N') OLD_CTN,
+		    ${db.mainschema}.F_FORMAT_PH(NEW_CTN, 'N') NEW_CTN,
+		    TO_CHAR(MOD_DT, 'YYYY-MM-DD HH24:MI') MOD_DT
+		FROM ${db.mainschema}.CUSTOMER_CTN_HIST A
+		WHERE 1=1 
+		]]>
+		
+		
+		<choose>
+			<when test="service_number_arr != '' and service_number_arr != null ">
+				AND OLD_CTN IN (${service_number_arr})
+			</when>
+			<otherwise>
+				<if test="service_number != '' and service_number != null ">
+			   	    AND OLD_CTN IN (${service_number})
+		   	    </if>
+		   	    <if test="service_account != '' and service_account != null ">
+			   	    AND SERVICE_ACCOUNT IN (${service_account})
+		   	    </if>			
+			</otherwise>
+		</choose>
+   	    
+   	    ORDER BY A.MOD_DT DESC
+	</select>
+	
+	<!-- 부정사용자 리스트 -->
+	<select id="customer_all_search_list4" parameterType="map" resultType="egovMap">
+	
+		<![CDATA[
+		SELECT
+			TELCO,
+			SERVICE_ACCOUNT,
+			${db.mainschema}.F_FORMAT_PH(${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT), 'N') SERVICE_NUMBER,
+			CUSTOMER_NAME CNMLOB, 
+		    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CUSTOMER_SSN), 'N') CSSN, 
+			BLACK_CD,
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'BLACK_CD', BLACK_CD) BLACK_CD_NM,
+			OPEN_FLAG,
+			${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'OPEN_FLAG', OPEN_FLAG) OPEN_FLAG_NM
+		FROM ${db.mainschema}.CUSTOMER_BLACK
+		WHERE 1=1 
+			AND STATUS = 'A'
+		]]>
+		
+			<choose>
+				<when test="(service_number_arr != '' and service_number_arr != null) or (ssn_arr != '' and ssn_arr != null)">
+					AND (
+						<if test="service_number_arr != '' and service_number_arr != null">
+							${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) IN (${service_number_arr})
+						</if>
+						<if test="service_number_arr != '' and service_number_arr != null and ssn_arr != '' and ssn_arr != null">
+							OR
+						</if>
+						<if test="ssn_arr != '' and ssn_arr != null">
+							CUSTOMER_SSN IN (${ssn_arr})
+						</if>
+					)
+				</when>
+				<otherwise>
+					<if test="service_number != '' and service_number != null ">
+				   	    AND ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) IN (${service_number})
+			   	    </if>
+			   	    <if test="service_account != '' and service_account != null ">
+				   	    AND SERVICE_ACCOUNT IN (${service_account})
+			   	    </if>
+			   	    <if test="ssn != '' and ssn != null ">
+			   	    	AND CUSTOMER_SSN IN (${ssn})
+			   	    </if>
+			   	    <if test="customer_name != '' and customer_name != null ">
+				   	    AND CUSTOMER_NAME IN (UPPER(#{customer_name}))
+			   	    </if>
+				</otherwise>
+			</choose>
+	
+	</select>
+	
+</mapper>

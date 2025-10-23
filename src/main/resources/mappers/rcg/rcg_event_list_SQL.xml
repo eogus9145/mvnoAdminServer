@@ -1,0 +1,152 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_event_list">
+	<sql id="rcg_event_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A RCG_EVENT_IDX1)*/
+			   SEQ,
+			   GRP_SEQ,
+			   (CASE WHEN TELCO = 'ETC' THEN '' ELSE SERVICE_ACCOUNT END) SERVICE_ACCOUNT,
+			   (CASE WHEN TELCO = 'ETC' THEN SERVICE_ACCOUNT ELSE ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) END) SERVICE_NUMBER,
+		       TELCO,
+		       CHG_TYPE,
+		       ${db.mainschema}.F_GET_COMMON_CD_NM('RCG_EVENT', 'CHG_TYPE', CHG_TYPE) CHG_TYPE_NM,
+		       ${db.mainschema}.F_GET_SERVICE_CD_NM(PROD_CD) PROD_NM,
+		       AMOUNT,
+		       STATUS,
+		       ${db.mainschema}.F_GET_COMMON_CD_NM('RCG_EVENT', 'STATUS', STATUS) STATUS_NM,
+		       TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT,
+		       ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+		       TO_CHAR(REQ_DT, 'YYYY-MM-DD HH24:MI:SS') REQ_DT,
+		       ${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REQ_ADMIN) REQ_ADMIN_NM,
+		       RCG_STATUS,
+		       (CASE WHEN RCG_STATUS = '' THEN '' WHEN RCG_STATUS = '9' THEN RCG_MSG ELSE ${db.mainschema}.F_GET_COMMON_CD_NM('RCG', 'STATUS', RCG_STATUS) END) RCG_STATUS_NM,
+		       RCG_MSG,
+		       RCG_SEQ,
+		       RCG_DESC,
+		       EVENT_GUBUN,
+		       ${db.mainschema}.F_GET_COMMON_CD_NM('RCG_EVENT', 'EVENT_GUBUN', EVENT_GUBUN) EVENT_GUBUN_NM,
+		       REG_AGENT,
+		       ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', REG_AGENT) REG_AGENT_NM
+		FROM ${db.mainschema}.RCG_EVENT A
+		WHERE REG_DT >= TO_DATE('20150101', 'YYYYMMDD')
+		   ]]>
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'rcg_desc'">
+					    AND RCG_DESC LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND SERVICE_ACCOUNT = ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword})
+					</when>
+					<when test="sst == 'grp_seq'">
+						AND GRP_SEQ = #{sword}
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("REG_DT", null, s_dt, e_dt, "Y", null)}
+					
+		<if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    
+   	    <if test="rcg_status != '' and rcg_status != null ">
+	   	    AND RCG_STATUS = #{rcg_status}
+   	    </if>
+   	    
+   	    <if test="event_gubun != '' and event_gubun != null ">
+	   	    AND EVENT_GUBUN = #{event_gubun}
+   	    </if>
+   	    
+   	    <if test="agent_id != '' and agent_id != null ">
+	   	    AND REG_AGENT = #{agent_id}
+   	    </if>
+   	    
+	</sql>
+	<sql id="rcg_event_list_add">
+	<![CDATA[
+		, (CASE WHEN STATUS = '9' THEN '(' || fq.STATUS_NM || ') ' || fq.RCG_MSG ELSE fq.STATUS_NM END) STATUS_NM_STR
+		, (CASE WHEN RCG_STATUS = '9' THEN '(' || fq.RCG_STATUS_NM || ') ' || fq.RCG_MSG ELSE fq.RCG_STATUS_NM END) RCG_STATUS_NM_STR
+	]]>
+	</sql>
+	<sql id="rcg_event_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="rcg_event_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.GRP_SEQ,
+			fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER,
+			fq.TELCO,
+			fq.CHG_TYPE,
+			fq.CHG_TYPE_NM,
+			fq.PROD_NM,
+			fq.AMOUNT,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.REG_DT,
+			fq.REG_ADMIN_NM,
+			fq.REQ_DT,
+		    fq.REQ_ADMIN_NM,
+			fq.RCG_STATUS,
+			fq.RCG_STATUS_NM,
+			fq.RCG_MSG,
+			fq.RCG_SEQ,
+			fq.RCG_DESC,
+			fq.EVENT_GUBUN,
+	        fq.EVENT_GUBUN_NM,
+	        fq.REG_AGENT,
+	        fq.REG_AGENT_NM
+	]]>
+		<include refid="rcg_event_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="rcg_event_list" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="rcg_event_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="rcg_event_list_add" /><![CDATA[
+	            ]]><include refid="rcg_event_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="rcg_event_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="rcg_event_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="rcg_event_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

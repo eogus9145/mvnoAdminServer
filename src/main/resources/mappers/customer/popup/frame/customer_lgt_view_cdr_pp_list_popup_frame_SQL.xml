@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_cdr_pp_list_popup_frame">
+	<sql id="customer_lgt_view_cdr_pp_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_CDR_PP_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)}_IDX2) */
+			   SERVICE_ACCOUNT,
+				${db.mainschema}.F_FORMAT_PH(SERVICE_NUMBER, 'N') SERVICE_NUMBER,
+				TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CDR_PP', 'TYPE', TYPE) TYPE_NM,
+				CALL_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CDR_PP', 'CALL_GUBUN', CALL_GUBUN) CALL_GUBUN_NM,
+				TO_CHAR(FROM_TIME, 'YYYY-MM-DD HH24:MI:SS') FROM_TIME, 
+				TO_CHAR(TO_TIME, 'YYYY-MM-DD HH24:MI:SS') TO_TIME, 
+				RCV_NO,
+				USED_TIME,
+				AMT,
+				TEL_CO,
+				REMAIN,
+				AGENT_ID,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME,
+				TRUNC(USE_BYTE/1024) USE_TYPE,
+				B.PREFIX PREFIX, 
+				TELCO_PX,
+				B.KOR_NAME KOR_NAME
+		 FROM ${db.mainschema}.LGT_CDR_PP_${@telecentro.common.service.CommonUtil@get_dollar_replace_query(selectYear)} A
+			  LEFT JOIN ${db.mainschema}.CODE_PREFIX B ON A.REGION = B.PREFIX
+		 WHERE A.SERVICE_ACCOUNT = #{account}
+				 AND TO_TIME >= DATE_TRUNC('month', NOW()) - INTERVAL '6 months'
+		 
+			]]>
+		
+			${@telecentro.common.service.CommonUtil@get_section_query("TO_TIME", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="customer_lgt_view_cdr_pp_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_cdr_pp_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.TYPE,
+			fq.TYPE_NM,
+			fq.CALL_GUBUN,
+			fq.CALL_GUBUN_NM,
+			fq.FROM_TIME, 
+			fq.TO_TIME, 
+			fq.RCV_NO,
+			fq.USED_TIME,
+			fq.AMT,
+			fq.TEL_CO,
+			fq.REMAIN,
+			fq.AGENT_ID,
+			fq.AGENT_NAME,
+			fq.USE_TYPE,
+			fq.PREFIX, 
+			fq.TELCO_PX,
+			fq.KOR_NAME
+	]]>
+		<include refid="customer_lgt_view_cdr_pp_list_popup_frame_add" />
+	<![CDATA[
+        FROM
+            (
+	]]>
+		<include refid="customer_lgt_view_cdr_pp_list_popup_frame" />
+		ORDER BY A.TO_TIME DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_cdr_pp_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_cdr_pp_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_cdr_pp_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_cdr_pp_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_cdr_pp_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

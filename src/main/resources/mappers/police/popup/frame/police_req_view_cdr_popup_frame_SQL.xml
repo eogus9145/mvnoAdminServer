@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_req_view_cdr_popup_frame">
+	<sql id="police_req_view_cdr_popup_frame">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A POLICE_CALL_CDR_REG_DT_IDX) */
+				SEQ,
+			   	POLICE_SEQ,
+				REQUEST_SEQ,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_CALL_CDR', 'STATUS', STATUS) STATUS_NM,
+				INQCAUSJOBDVCD,
+				${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_CALL_CDR', 'INQCAUSJOBDVCD', INQCAUSJOBDVCD) INQCAUSJOBDVCD_NM,
+				CRSDOCTYPECD,
+				TO_CHAR(INQPRSSSTRTDTTM, 'YYYY-MM-DD HH24:MI:SS') INQPRSSSTRTDTTM,
+				TO_CHAR(INQPRSSENDDTTM, 'YYYY-MM-DD HH24:MI:SS') INQPRSSENDDTTM,
+				BILLACNTNO,
+				ACENO,
+				ENTRNO,
+				BSCTXCLNYN,
+				${db.mainschema}.F_FORMAT_PH(CTN, 'N') CTN,
+				MRKTCD,
+				CUSTNM,
+				CRSDOCRCPTNO,
+				HISTSRLNO,
+				PRSSSTTSNM,
+				PRSSCNT,
+				ERRCDNM,
+				(CASE WHEN STRGFILENM = '' THEN 'N' ELSE 'Y' END) FILE_FLAG,
+				DUPPRSSCNT,
+				REQ_RET_CD,
+				REQ_RET_MSG,
+				REQ_RET_DT,
+				RES_CNT,
+				RES_RET_CD,
+				RES_RET_MSG,
+				RES_RET_DT,
+				FILE_DOWN_FLAG,
+				FILE_DOWN_MSG,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+				TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT
+			   ]]>
+			FROM   ${db.mainschema}.POLICE_CALL_CDR A
+			WHERE REG_DT > TO_DATE('2021-01-01','YYYY-MM-DD')
+				  AND POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+			
+	</sql>
+	<sql id="police_req_view_cdr_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="police_req_view_cdr_popup_frame" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+            fq.POLICE_SEQ,
+			fq.REQUEST_SEQ,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.INQCAUSJOBDVCD,
+			fq.INQCAUSJOBDVCD_NM,
+			fq.CRSDOCTYPECD,
+			fq.INQPRSSSTRTDTTM,
+			fq.INQPRSSENDDTTM,
+			fq.BILLACNTNO,
+			fq.ACENO,
+			fq.ENTRNO,
+			fq.BSCTXCLNYN,
+			fq.CTN,
+			fq.MRKTCD,
+			fq.CUSTNM,
+			fq.CRSDOCRCPTNO,
+			fq.HISTSRLNO,
+			fq.PRSSSTTSNM,
+			fq.PRSSCNT,
+			fq.ERRCDNM,
+			fq.FILE_FLAG,
+			fq.DUPPRSSCNT,
+			fq.REQ_RET_CD,
+			fq.REQ_RET_MSG,
+			fq.REQ_RET_DT,
+			fq.RES_CNT,
+			fq.RES_RET_CD,
+			fq.RES_RET_MSG,
+			fq.RES_RET_DT,
+			fq.FILE_DOWN_FLAG,
+			fq.FILE_DOWN_MSG,
+			fq.REG_ADMIN_NM,
+			fq.REG_DT
+	]]>
+		<include refid="police_req_view_cdr_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="police_req_view_cdr_popup_frame" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="police_req_view_cdr_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="police_req_view_cdr_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	
+	<!-- CDR파일 다운시 파일경오를 얻어온다 -->
+	<select id="police_req_view_cdr_popup_frame_file_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT STRGFILENM
+		FROM ${db.mainschema}.POLICE_CALL_CDR 
+		WHERE POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+		      AND SEQ = CAST(#{seq} AS BIGINT)
+		]]>
+	</select>
+</mapper>

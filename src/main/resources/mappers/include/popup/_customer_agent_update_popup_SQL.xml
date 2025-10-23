@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_agent_update_popup">
+	<select id="_customer_agent_update_popup" parameterType="map" resultType="egovMap">
+		<if test="page_telco == 'LGT'">
+			SELECT  SERVICE_TYPE,
+					AGENT_ID, 
+					NAT_CD, 
+					${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'NAT_CD', NAT_CD) NATIONALITY_NM,
+					LANG,
+					TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT, 
+					STAY_QUALF_CD,
+					COALESCE((SELECT VAC_FLAG FROM ${db.mainschema}.AGENT WHERE AGENT_ID = A.AGENT_ID),'Y') VAC_FLAG, 
+					COALESCE((SELECT VAC_BANK FROM ${db.mainschema}.AGENT WHERE AGENT_ID = A.AGENT_ID),'농협') VAC_BANK, 
+					${db.mainschema}.F_GET_CUSTOMER_INFO('VAC', 'LGT', A.SERVICE_ACCOUNT) VIR_ACCOUNT_ID,
+					CINDTIND CUST_IDNT_NO_IND_CD,
+                    ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CINDTIND', CINDTIND) CUST_IDNT_NO_IND_CD_NM,
+                    SERVICE_CODE
+			FROM ${db.mainschema}.CUSTOMER_LGT A, ${db.mainschema}.LGT_SUB B, ${db.mainschema}.LGT_CUS C
+			WHERE SERVICE_ACCOUNT = #{account} 
+			AND A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			AND B.CUSTOMER_ID = C.CUSTOMER_ID
+		</if>
+		<if test="page_telco == 'SKT'">
+			SELECT  SERVICE_TYPE,
+					AGENT_ID, 
+					NAT_CD, 
+					F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'NAT_CD', NAT_CD) NATIONALITY_NM,
+					LANG,
+					TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT, 
+					STAY_QUALF_CD,
+					NVL((SELECT VAC_FLAG  FROM AGENT WHERE AGENT_ID = A.AGENT_ID),'Y') VAC_FLAG, 
+					NVL((SELECT VAC_BANK FROM AGENT WHERE AGENT_ID = A.AGENT_ID),'농협') VAC_BANK, 
+					F_GET_CUSTOMER_INFO('VAC', 'SKT', A.SERVICE_ACCOUNT) VIR_ACCOUNT_ID,
+					CTZ_CORP_NUM_TYPE,
+                    F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CTZ_CORP_NUM_TYPE', CTZ_CORP_NUM_TYPE) CUST_IDNT_NO_IND_CD_NM,
+                    PROD_CD SERVICE_CODE
+			FROM CUSTOMER_SKT A, SKT_CUSTOMER B
+			WHERE A.SERVICE_ACCOUNT = #{account} 
+			AND A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+		</if>
+	</select>
+	
+	<select id="_customer_agent_update_popup_agent_id" parameterType="map" resultType="egovMap">
+	    SELECT (CASE WHEN ${db.mainschema}.F_GET_CUSTOMER_INFO('AGENT_ID', #{page_telco}, #{account}) = '' THEN 'N' ELSE 'Y' END) AGENT_YN
+	</select>
+	
+	<select id="_customer_agent_update_popup_auto_recharge" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_GET_AUTO_RECHARGE(
+		#{i_account,mode=IN,jdbcType=VARCHAR},
+		#{i_agent_id,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_data,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<!-- <select id="_customer_agent_update_popup_agent_vac" parameterType="map" resultType="egovMap" >
+        SELECT VAC_FLAG, NVL(VAC_BANK, '농협') VAC_BANK,
+	 	FROM AGENT A
+		WHERE AGENT_ID = #{agent_id}
+    </select>-->
+    
+    <select id="_customer_agent_update_popup_update1" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_CHG(
+		#{i_op_code,mode=IN,jdbcType=VARCHAR},
+		#{page_telco,mode=IN,jdbcType=VARCHAR},
+		#{i_service_account,mode=IN,jdbcType=VARCHAR},
+		#{i_agent_id,mode=IN,jdbcType=VARCHAR},
+		#{i_nat_cd,mode=IN,jdbcType=VARCHAR},
+		#{i_lang,mode=IN,jdbcType=VARCHAR},
+		#{i_stay_qualf_cd,mode=IN,jdbcType=VARCHAR},
+		#{i_stay_expir_dt,mode=IN,jdbcType=VARCHAR},
+		#{i_vac_flag,mode=IN,jdbcType=VARCHAR},
+		#{i_vac_bank,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="_customer_agent_update_popup_update2" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_AGENT(
+		#{page_telco,mode=IN,jdbcType=VARCHAR},
+		#{i_service_account,mode=IN,jdbcType=VARCHAR},
+		#{i_agent_id,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

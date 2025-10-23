@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_doc_list">
+	<sql id="customer_doc_list">
+		<![CDATA[
+		SELECT /*+ INDEX_DESC(A CUSTOMER_DOC_IDX1) */
+		   	DOC_FILE,
+			SEQ,
+			DOC_GUBUN,
+			${db.mainschema}.F_GET_COMMON_CD_NM('FAX_DETAIL', 'DOC_GUBUN', DOC_GUBUN) DOC_GUBUN_NM,
+			FAX_GUBUN,
+			${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'FAX_GUBUN', FAX_GUBUN) FAX_GUBUN_NM,
+			TO_CHAR(A.ENTER_DATE, 'YYYY-MM-DD HH24:MI') ENTER_DATE,
+			A.SERVICE_ACCOUNT,
+			MASK_YN,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			TELCO,
+			${db.mainschema}.F_FORMAT_PH(${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', TELCO, A.SERVICE_ACCOUNT), 'N') SERVICE_NUMBER,  
+			${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', TELCO, A.SERVICE_ACCOUNT) CUST_FRST_NM, 
+			${db.mainschema}.F_GET_CUSTOMER_INFO('OPEN_DATE', TELCO, A.SERVICE_ACCOUNT) OPEN_DATE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', ${db.mainschema}.F_GET_CUSTOMER_INFO('STATUS', TELCO, A.SERVICE_ACCOUNT)) STATUS_NM,
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', ${db.mainschema}.F_GET_CUSTOMER_INFO('AGENT_ID', TELCO, A.SERVICE_ACCOUNT)) AGENT_ID_NM,
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', ${db.mainschema}.F_GET_CUSTOMER_INFO('DEALER_ID', TELCO, A.SERVICE_ACCOUNT)) DEALER_NM, 
+			(CASE WHEN ${db.mainschema}.F_GET_CUSTOMER_INFO('NAT_CD', TELCO, A.SERVICE_ACCOUNT) = '' THEN '미등록' ELSE ${db.mainschema}.F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'NAT_CD', ${db.mainschema}.F_GET_CUSTOMER_INFO('NAT_CD', TELCO, A.SERVICE_ACCOUNT)) END) NATIONALITY_NM
+		FROM ${db.mainschema}.CUSTOMER_DOC A
+		WHERE USABLE = 'U'
+		]]>
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					  	AND A.SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+					    AND (A.SERVICE_ACCOUNT = (SELECT ${db.mainschema}.F_GET_ACCOUNT('ALL', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT ${db.mainschema}.F_GET_ACCOUNT('ALL', '010' || #{sword})))
+					</when>
+					<otherwise>
+				   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	 
+		
+		<if test="fax_gubun != '' and fax_gubun != null ">
+	   	    AND FAX_GUBUN = #{fax_gubun}
+   	    </if>
+   	    
+   	    <if test="doc_gubun != '' and doc_gubun != null ">
+	   	    AND A.DOC_GUBUN = #{doc_gubun}
+   	    </if>
+   	    
+   	    <choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("A.ENTER_DATE", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				A.SERVICE_ACCOUNT = '99999999999999999999';
+			</otherwise>
+		</choose>
+	</sql>
+	<sql id="customer_doc_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_doc_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_doc_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.DOC_FILE,
+			fq.SEQ,
+			fq.DOC_GUBUN,
+			fq.DOC_GUBUN_NM,
+			fq.FAX_GUBUN,
+			fq.FAX_GUBUN_NM,
+			fq.ENTER_DATE,
+			fq.SERVICE_ACCOUNT,
+			fq.MASK_YN,
+			fq.ADMIN_NM,
+			fq.TELCO,
+			fq.SERVICE_NUMBER,  
+			fq.CUST_FRST_NM, 
+			fq.OPEN_DATE, 
+			fq.STATUS_NM,  
+			fq.AGENT_ID_NM,  
+			fq.DEALER_NM,  
+			fq.NATIONALITY_NM
+	]]>
+		<include refid="customer_doc_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_doc_list" />
+		ORDER BY A.ENTER_DATE DESC, A.FAX_GUBUN DESC, A.DOC_GUBUN DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_doc_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_doc_list_add" /><![CDATA[
+	            ]]><include refid="customer_doc_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_doc_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_doc_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_doc_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

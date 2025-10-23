@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_cancel_list">
+	<sql id="customer_skt_cancel_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A CUSTOMER_SKT_IDX1) */
+			A.SERVICE_ACCOUNT,
+			B.SERVICE_NUMBER,
+			B.PROD_CD,
+			NVL(F_GET_SERVICE_CD_NM(B.PROD_CD), B.PROD_CD) PROD_CD_NM,
+			B.CUST_FRST_NM CUSTOMER_NAME,
+			B.CUST_TYP_CD CUSTOMER_TYPE,
+			CTZ_CORP_NUM_TYPE,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CTZ_CORP_NUM_TYPE', B.CTZ_CORP_NUM_TYPE) CTZ_CORP_NUM_TYPE_NM,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CUST_TYP_CD', B.CUST_TYP_CD) CUSTOMER_TYPE_NM,
+			STATUS,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STATUS', STATUS) STATUS_NM,
+			TO_CHAR(OPEN_DATE, 'YY/MM/DD') OPEN_DATE,
+			DEALER_ID,
+			AGENT_ID,
+			F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME,
+			BALANCE,
+			B.SERVICE_TYPE,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', B.SERVICE_TYPE) SERVICE_TYPE_NM,
+			NAT_CD,
+			VA_NM,
+			TOTAL_CHG,
+			TO_CHAR(STOP_DT, 'YY/MM/DD') STOP_DT,
+			NVL(F_GET_COMMON_CD_NM('CUSTOMER_SKT','STOP_CL_CD',A.STOP_CL_CD), '-') STOP_CL_CD_NM,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT','STOP_RSN_CD',A.STOP_RSN_CD) STOP_RSN_CD_NM,
+			TO_CHAR(CANCEL_DT, 'YY/MM/DD') CANCEL_DT,
+			NVL(F_GET_COMMON_CD_NM('CUSTOMER_SKT','CANCEL_RSN_CD',A.CANCEL_RSN_CD), '-') CANCEL_REASON_NM,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT','CANCEL_CHG_CD',A.CANCEL_CHG_CD) CANCEL_GUBUN_NM,
+			AES256LOCALDEC(ENC_CTZ_CORP_NUM) ENC_CTZ_CORP_NUM,
+			ZIP,
+			(ADDR_INFO1 || ' ' || ADDR_INFO2) AS ADDR_INFO,
+			OPEN_POST_ORG_CD,
+			OPEN_TERM_ORG_CD,
+			OPEN_PROC_ID,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SCRB_REQ_RSN_CD', B.SCRB_REQ_RSN_CD) OPEN_REASON,
+			NVL((SELECT COUNT(*) FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND ENTER_DATE >= DATE_TRUNC('day', OPEN_DATE) AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT), 0) DOC_CNT
+	 ]]>
+		 FROM CUSTOMER_SKT A,
+		      SKT_CUSTOMER B
+		WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+			AND STATUS = 'C' 
+	
+		<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_account'">
+						    AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'service_number'">
+							AND (B.SERVICE_NUMBER = #{sword} OR B.SERVICE_NUMBER = '010' || #{sword})
+						</when>
+						<when test="sst == 'cust_frst_nm'">
+						  	AND (CUST_FRST_NM = UPPER(#{sword}) OR CUST_FRST_NM = LOWER(#{sword}))
+						</when>
+						<when test="sst == 'prod_cd'">
+						  	AND PROD_CD = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+					
+					<if test='sst != "contract_num" and sst != "service_number"'>
+						${@telecentro.common.service.CommonUtil@get_section_query("CANCEL_DT", null, s_dt, e_dt, "Y", null)}
+					</if>
+				</when>
+				<otherwise>
+					${@telecentro.common.service.CommonUtil@get_section_query("CANCEL_DT", null, s_dt, e_dt, "Y", null)}
+				</otherwise>
+			</choose>		  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("OPEN_DATE", null, s_dt_open, e_dt_open, "Y", null)}
+			
+   	    <if test="service_type != '' and service_type != null ">
+	   	    AND B.SERVICE_TYPE = #{service_type}
+   	    </if>
+   	    <if test="cancel_cd != '' and cancel_cd != null ">
+	   	    AND A.CANCEL_CHG_CD = #{cancel_cd}
+   	    </if>
+   	    <choose>
+			<when test='doc_cnt == "Y"'>
+			  	AND A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day', B.OPEN_DATE) LIMIT 1)
+			</when>
+			<when test='doc_cnt == "N"'>
+			  	AND A.SERVICE_ACCOUNT NOT IN (SELECT SERVICE_ACCOUNT FROM CUSTOMER_DOC WHERE USABLE = 'U' AND TELCO = 'SKT' AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND ENTER_DATE >= DATE_TRUNC('day', B.OPEN_DATE) LIMIT 1)
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="agent_id == 'NONE'">
+			  	AND AGENT_ID IS NULL
+			</when>
+			<when test="agent_id != '' and agent_id != null">
+			  	AND AGENT_ID = #{agent_id}
+			</when>
+			<otherwise>
+			</otherwise>
+		</choose>
+			
+	</sql>
+
+	<sql id="customer_skt_cancel_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+
+	<sql id="customer_skt_cancel_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	
+	<select id="customer_skt_cancel_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.PROD_CD,
+			fq.PROD_CD_NM,
+			fq.CUSTOMER_NAME,
+			fq.CUSTOMER_TYPE,
+			fq.CTZ_CORP_NUM_TYPE,
+			fq.CTZ_CORP_NUM_TYPE_NM,
+			fq.CUSTOMER_TYPE_NM,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.OPEN_DATE,
+			fq.DEALER_ID,
+			fq.AGENT_ID,
+			fq.AGENT_NAME,
+			fq.BALANCE,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.NAT_CD,
+			fq.VA_NM,
+			fq.TOTAL_CHG,
+			fq.DOC_CNT,
+			fq.STOP_DT,
+			fq.STOP_CL_CD_NM,
+			fq.STOP_RSN_CD_NM,
+			fq.CANCEL_DT,
+			fq.CANCEL_REASON_NM,
+			fq.CANCEL_GUBUN_NM,
+			fq.ENC_CTZ_CORP_NUM,
+			fq.ZIP,
+			fq.ADDR_INFO,
+			fq.OPEN_POST_ORG_CD,
+			fq.OPEN_TERM_ORG_CD,
+			fq.OPEN_PROC_ID,
+			fq.OPEN_REASON
+	]]>
+		<include refid="customer_skt_cancel_list_add" />
+	<![CDATA[
+		FROM (
+	]]>
+			<include refid="customer_skt_cancel_list" />
+			ORDER BY B.OPEN_DATE DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_cancel_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_cancel_list_add" /><![CDATA[
+	            ]]><include refid="customer_skt_cancel_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_cancel_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_cancel_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_cancel_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

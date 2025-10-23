@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_req_popup">
+	
+	<select id="police_req_popup_file_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT FILE_NM1, FILE_NM2, FILE_NM3
+		FROM ${db.mainschema}.POLICE_REQ
+		WHERE POLICE_SEQ = CAST(#{police_seq} AS BIGINT)
+		]]>
+	</select>
+	
+	<select id="police_req_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+			POLICE_SEQ,
+			REQ_ID,
+			REQ_PLACE,
+			SUMMARY,
+			REQ_PERSON NO_MASK_REQ_PERSON,
+			REQ_PHONE NO_MASK_REQ_PHONE,
+			REQ_EMAIL NO_MASK_REQ_EMAIL,
+			STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('POLICE_REQ', 'STATUS', STATUS) STATUS_NM,
+			MEMO,
+			TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI:SS') REG_DT,
+			REG_ADMIN,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+			TO_CHAR(CON_DT, 'YYYY-MM-DD HH24:MI:SS') CON_DT,
+			CON_ADMIN,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', CON_ADMIN) CON_ADMIN_NM,
+			TO_CHAR(END_DT, 'YYYY-MM-DD HH24:MI:SS') END_DT,
+			END_ADMIN,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', END_ADMIN) END_ADMIN_NM,
+			(SELECT COUNT(*) FROM ${db.mainschema}.POLICE_DOC WHERE POLICE_SEQ = CAST(#{policeSeq} AS BIGINT) AND USABLE = 'U') IMG_CNT
+		FROM ${db.mainschema}.POLICE_REQ A
+		WHERE POLICE_SEQ = CAST(#{policeSeq} AS BIGINT)
+		]]>
+	</select>
+	
+	<select id="police_req_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_POLICE_REQ(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{policeSeq,mode=IN,jdbcType=VARCHAR},
+		#{reqId,mode=IN,jdbcType=VARCHAR},
+		#{reqPlace,mode=IN,jdbcType=VARCHAR},
+		#{reqPerson,mode=IN,jdbcType=VARCHAR},
+		#{reqPhone,mode=IN,jdbcType=VARCHAR},
+		#{reqEmail,mode=IN,jdbcType=VARCHAR},
+		#{status,mode=IN,jdbcType=VARCHAR},
+		#{summary,mode=IN,jdbcType=VARCHAR},
+		#{memo,mode=IN,jdbcType=VARCHAR},
+		#{fileNm1,mode=IN,jdbcType=VARCHAR},
+		#{fileNm2,mode=IN,jdbcType=VARCHAR},
+		#{fileNm3,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

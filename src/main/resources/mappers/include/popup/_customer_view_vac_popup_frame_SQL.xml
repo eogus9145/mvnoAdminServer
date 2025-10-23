@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_view_vac_popup_frame">
+	<select id="_customer_view_vac_popup_frame_info" parameterType="map"	resultType="egovMap">
+		SELECT ${db.mainschema}.F_FORMAT_VAC(${db.mainschema}.AES256LOCALDEC(VIR_ACCOUNT_ID)) VIR_ACCOUNT_ID,
+			 VIR_BANK_NAME
+		FROM ${db.mainschema}.VIR_ACCOUNT A
+		where A.SERVICE_ACCOUNT = #{account}
+			AND USER_TYPE = 'U'
+			AND STATUS = 'A'
+			AND TELCO = #{page_telco}
+	</select>
+	
+	<select id="_customer_view_vac_popup_frame_bank" parameterType="map"	resultType="egovMap">
+	<![CDATA[	
+	    SELECT VIR_BANK_NAME 
+	    FROM ${db.mainschema}.VIR_ACCOUNT 
+	    GROUP BY VIR_BANK_NAME 
+	    ORDER BY VIR_BANK_NAME ASC
+	]]>
+	</select>
+	
+	<select id="_customer_view_vac_popup_frame_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_VIR_ACCOUNT(
+		#{event,mode=IN,jdbcType=VARCHAR},
+		#{user_type,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{account,mode=IN,jdbcType=VARCHAR},
+		#{bank,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_vir_account,mode=OUT,jdbcType=VARCHAR},
+		#{o_vir_bank,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+
+</mapper>

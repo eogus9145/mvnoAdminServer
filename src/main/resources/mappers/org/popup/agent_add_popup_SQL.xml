@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.agent_add_popup">
+	
+	<!-- 유통만관리 팝업 정보 -->
+	<select id="agent_add_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT AGENT_ID,
+				   AGENT_NAME,
+				   AGENT_TYPE,
+				   AGENT_AREA,
+				   HIGH_AGENT,
+				   STATUS,
+				   SHOP_ID NO_MASK_SHOP_ID,
+				   ${db.mainschema}.AES256LOCALDEC(SHOP_PEOPLE_ID) NO_MASK_SHOP_PEOPLE_ID,
+				   OWNER_NAME NO_MASK_OWNER_NAME,
+				   ${db.mainschema}.AES256LOCALDEC(OWNER_PEOPLE_ID) NO_MASK_OWNER_PEOPLE_ID,
+				   MOBILE NO_MASK_MOBILE,
+				   PHONE_O,
+				   EMAIL NO_MASK_EMAIL,
+				   TO_CHAR(CONTRACT_DATE, 'YYYY-MM-DD') CONTRACT_DATE,
+				   HOME_PAGE,
+				   OP_NAME,
+				   OP_PHONE,
+				   OP_MOBILE1,
+				   OP_MOBILE2,
+				   OP_MOBILE3,
+				   OP_EMAIL,
+				   ZIPCODE_O,
+				   ADDRESS_O_1,
+				   ADDRESS_O_2,
+				   ZIPCODE_D,
+				   ADDRESS_D_1,
+				   ADDRESS_D_2,
+				   RCG_AUTO_GRP,
+				   RCG_RATE_GRP,
+				   VAC_BANK,
+				   VAC_FLAG,
+				   (SELECT ${db.mainschema}.F_FORMAT_VAC(VIR_ACCOUNT_ID) FROM ${db.mainschema}.VIR_ACCOUNT WHERE AGENT_ID = A.AGENT_ID AND STATUS = 'A' AND USER_TYPE = 'A') VIR_ACCOUNT_ID,
+				   (SELECT VIR_BANK_NAME FROM ${db.mainschema}.VIR_ACCOUNT WHERE AGENT_ID = A.AGENT_ID AND STATUS = 'A' AND USER_TYPE = 'A') VIR_BANK_NAME,
+				   (SELECT ${db.mainschema}.F_FORMAT_VAC(VIR_ACCOUNT_ID) FROM ${db.mainschema}.VIR_ACCOUNT WHERE AGENT_ID = A.AGENT_ID AND STATUS = 'A' AND USER_TYPE = 'A2') ORDER_VIR_ACCOUNT_ID,
+				   (SELECT VIR_BANK_NAME FROM ${db.mainschema}.VIR_ACCOUNT WHERE AGENT_ID = A.AGENT_ID AND STATUS = 'A' AND USER_TYPE = 'A2') ORDER_VIR_BANK_NAME,
+				   LGT_AGENCY_ID,
+				   LGT_OPEN_FLAG,
+				   KT_AGENCY_ID,
+				   KT_OPEN_FLAG,
+				   MEMO1,
+				   MEMO2,
+				   MEMO3,
+				   MEMO4,
+				   MEMO5,
+				   REMARK,
+				   (SELECT COUNT(*) FROM ${db.mainschema}.AGENT_DOC WHERE AGENT_ID = #{no} AND USABLE = 'U') IMG_CNT
+			FROM ${db.mainschema}.AGENT A 
+			WHERE AGENT_ID = #{no}
+		]]>
+	</select>
+	
+	<!-- 유통망관리 등록/수정 -->
+	<select id="agent_add_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_AGENT(
+		#{opCode,mode=IN,jdbcType=VARCHAR},
+		#{agentId,mode=IN,jdbcType=VARCHAR},
+		#{agentType,mode=IN,jdbcType=VARCHAR},
+		#{status,mode=IN,jdbcType=VARCHAR},
+		#{highAgent,mode=IN,jdbcType=VARCHAR},
+		#{agentName,mode=IN,jdbcType=VARCHAR},
+		#{agentArea,mode=IN,jdbcType=VARCHAR},
+		#{shopName,mode=IN,jdbcType=VARCHAR},
+		#{shopId,mode=IN,jdbcType=VARCHAR},
+		#{shopPeopleId,mode=IN,jdbcType=VARCHAR},
+		#{uptae,mode=IN,jdbcType=VARCHAR},
+		#{jongmok,mode=IN,jdbcType=VARCHAR},
+		#{ownerName,mode=IN,jdbcType=VARCHAR},
+		#{ownerPeopleId,mode=IN,jdbcType=VARCHAR},
+		#{zipcodeO,mode=IN,jdbcType=VARCHAR},
+		#{addressO1,mode=IN,jdbcType=VARCHAR},
+		#{addressO2,mode=IN,jdbcType=VARCHAR},
+		#{zipcodeD,mode=IN,jdbcType=VARCHAR},
+		#{addressD1,mode=IN,jdbcType=VARCHAR},
+		#{addressD2,mode=IN,jdbcType=VARCHAR},
+		#{phoneO,mode=IN,jdbcType=VARCHAR},
+		#{mobile,mode=IN,jdbcType=VARCHAR},
+		#{email,mode=IN,jdbcType=VARCHAR},
+		#{homePage,mode=IN,jdbcType=VARCHAR},
+		#{opName,mode=IN,jdbcType=VARCHAR},
+		#{opPhone,mode=IN,jdbcType=VARCHAR},
+		#{opEmail,mode=IN,jdbcType=VARCHAR},
+		#{opMobile1,mode=IN,jdbcType=VARCHAR},
+		#{opMobile2,mode=IN,jdbcType=VARCHAR},
+		#{opMobile3,mode=IN,jdbcType=VARCHAR},
+		#{contractDate,mode=IN,jdbcType=VARCHAR},
+		#{delRsn,mode=IN,jdbcType=VARCHAR},
+		#{vacFlag,mode=IN,jdbcType=VARCHAR},
+		#{vacBank,mode=IN,jdbcType=VARCHAR},
+		#{rcgAutoGrp,mode=IN,jdbcType=VARCHAR},
+		#{rcgRateGrp,mode=IN,jdbcType=VARCHAR},
+		#{sktAgencyId,mode=IN,jdbcType=VARCHAR},
+		#{ktAgencyId,mode=IN,jdbcType=VARCHAR},
+		#{lgtAgencyId,mode=IN,jdbcType=VARCHAR},
+		#{sktOpenFlag,mode=IN,jdbcType=VARCHAR},
+		#{ktOpenFlag,mode=IN,jdbcType=VARCHAR},
+		#{lgtOpenFlag,mode=IN,jdbcType=VARCHAR},
+		#{image1,mode=IN,jdbcType=VARCHAR},
+		#{image2,mode=IN,jdbcType=VARCHAR},
+		#{image3,mode=IN,jdbcType=VARCHAR},
+		#{image4,mode=IN,jdbcType=VARCHAR},
+		#{image5,mode=IN,jdbcType=VARCHAR},
+		#{memo1,mode=IN,jdbcType=VARCHAR},
+		#{memo2,mode=IN,jdbcType=VARCHAR},
+		#{memo3,mode=IN,jdbcType=VARCHAR},
+		#{memo4,mode=IN,jdbcType=VARCHAR},
+		#{memo5,mode=IN,jdbcType=VARCHAR},
+		#{remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_SERVER_NAME,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<!-- 유통점 가상계좌 부여/회수 -->
+	<select id="agent_add_popup_vac" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_VIR_ACCOUNT(
+		#{event,mode=IN,jdbcType=VARCHAR},
+		#{user_type,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{account,mode=IN,jdbcType=VARCHAR},
+		#{bank,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_vir_account,mode=OUT,jdbcType=VARCHAR},
+		#{o_vir_bank,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+</mapper>

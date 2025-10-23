@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.access_page_list">
+	<sql id="access_page_list">
+	<![CDATA[	
+		SELECT /*+ INDEX_DESC(A ADMIN_ACCESS_PAGE_IDX1) */
+			ADMIN_ID,
+			${db.mainschema}.F_GET_ADMIN_INFO('AGENT_NAME', ADMIN_ID) AGENT_NM,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			TO_CHAR(ACCESS_DATE, 'YYYY/MM/DD HH24:MI:SS') ACCESS_DATE,
+			AUTH_NAME_P,
+			AUTH_NAME,
+			AUTH_NAME_SUB,
+			AUTH_QUERY_ID,
+			(CASE WHEN RET_CD = '0000' THEN '성공' ELSE RET_MSG END) RET_MSG
+	]]>
+		FROM ${db.mainschema}.ADMIN_ACCESS_PAGE A 
+		WHERE ACCESS_DATE >= TO_DATE('20230101', 'YYYYMMDD')
+		
+		<if test="admin_id != '' and admin_id != null ">
+	   	    AND ADMIN_ID = #{admin_id}
+   	    </if>
+		<if test="auth_cd != '' and auth_cd != null ">
+	   	    AND AUTH_CD = #{auth_cd}
+   	    </if>
+   	    <if test='excel_log_flag == "Y"'>
+   	    	AND AUTH_NAME_SUB = '엑셀'
+   	    </if>
+		
+		<choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("ACCESS_DATE", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				A.ADMIN_ID = '99999999999999999999';
+			</otherwise>
+		</choose>
+		
+	</sql>
+	<sql id="access_page_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="access_page_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="access_page_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.ADMIN_ID,
+			fq.AGENT_NM,
+			fq.ADMIN_NM,
+			fq.ACCESS_DATE,
+			fq.AUTH_NAME_P,
+			fq.AUTH_NAME,
+			fq.AUTH_NAME_SUB,
+			fq.AUTH_QUERY_ID,
+			fq.RET_MSG
+	]]>
+		<include refid="access_page_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="access_page_list" />
+		ORDER BY A.ACCESS_DATE DESC, A.ADMIN_ID DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="access_page_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="access_page_list_add" /><![CDATA[
+	            ]]><include refid="access_page_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="access_page_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="access_page_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="access_page_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<select id="access_page_list_auth_cd" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT 
+			AUTH_CD, 
+			AUTH_NAME, 
+			AUTH_SORT, 
+			(SELECT AUTH_SORT FROM ${db.mainschema}.ADMIN_AUTH_MENU WHERE AUTH_CD = A.AUTH_PARENT) PARENT_AUTH_SORT
+		FROM ${db.mainschema}.ADMIN_AUTH_MENU A
+		WHERE AUTH_PARENT <> '0' 
+			AND AUTH_TYPE <> 'AUTH'
+		ORDER BY PARENT_AUTH_SORT, AUTH_SORT
+	]]>
+	</select>
+	
+</mapper>

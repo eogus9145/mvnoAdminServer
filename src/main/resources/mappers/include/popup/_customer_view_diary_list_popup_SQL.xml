@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.include._customer_view_diary_list_popup">
+	<select id="_customer_view_diary_list_popup_cust_info" parameterType="map" resultType="egovMap">
+		<if test="page_telco == 'LGT'">
+			SELECT 	SERVICE_NUMBER SERVICE_NUMBER, 
+					SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+					CNMLOB CUSTOMER_NAME, 
+					CNMLOB NO_MASK_CUSTOMER_NAME, 
+					${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'LGT', CONTRACT_NUM)) SERVICE_TYPE_NM,
+					A.CONTRACT_NUM SERVICE_ACCOUNT
+			FROM ${db.mainschema}.LGT_SUB A, ${db.mainschema}.LGT_CUS B
+			WHERE A.CONTRACT_NUM = #{account}
+			AND A.CUSTOMER_ID = B.CUSTOMER_ID
+		</if>
+		<if test="page_telco == 'SKT'">
+			SELECT 	SERVICE_NUMBER SERVICE_NUMBER, 
+					SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+					CUST_FRST_NM CUSTOMER_NAME, 
+					CUST_FRST_NM NO_MASK_CUSTOMER_NAME, 
+					F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SERVICE_TYPE', F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'SKT', A.SERVICE_ACCOUNT)) SERVICE_TYPE_NM
+			FROM SKT_CUSTOMER A
+			WHERE A.SERVICE_ACCOUNT = #{account}
+		</if>
+	</select>
+	
+	<select id="_customer_view_diary_list_popup_info" parameterType="map" resultType="egovMap">
+		SELECT DIARY_ID, 
+				SERVICE_NUMBER NO_MASK_SERVICE_NUMBER, 
+				SERVICE_ACCOUNT, 
+				REQ_USER_NAME NO_MASK_REQ_USER_NAME,
+				REQ_USER_GUBUN, 
+				${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_TYPE', 'ALL', SERVICE_ACCOUNT) SERVICE_TYPE_NM,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DIARY', 'REQ_USER_GUBUN', REQ_USER_GUBUN) REQ_USER_GUBUN_NM,
+				REQ_TYPE1, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_TYPE1', REQ_TYPE1) REQ_TYPE1_NM,
+				REQ_TYPE2, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DIARY', 'REQ_TYPE2', REQ_TYPE2) REQ_TYPE2_NM,
+				REQ_BODY, 
+				RES_STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DIARY', 'RES_STATUS', RES_STATUS) RES_STATUS_NM,
+				RES_BODY, 
+				RES_ADMIN, 
+				TO_CHAR(RES_END_DATE, 'YYYY-MM-DD') RES_END_DATE_D, 
+				TO_CHAR(RES_END_DATE, 'HH24') RES_END_DATE_H, 
+				TO_CHAR(RES_END_DATE, 'MI') RES_END_DATE_M, 
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD') REG_DATE_D, 
+				TO_CHAR(REG_DATE, 'HH24') REG_DATE_H, 
+				TO_CHAR(REG_DATE, 'MI') REG_DATE_M, 
+				REG_ADMIN, 
+				RES_ADMIN,
+				REMARK,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DIARY', 'STATUS', STATUS) STATUS_NM
+		FROM ${db.mainschema}.CUSTOMER_DRY A
+		WHERE TELCO IN (#{page_telco}, 'ETC')
+				AND DIARY_ID = CAST(#{no} AS BIGINT)
+	</select>
+	
+	<select id="_customer_view_diary_list_popup_req_list" parameterType="map" resultType="egovMap">
+		SELECT
+	    	(A.CD_NM || ' > ' || B.CD_NM) AS LABEL,
+	    	(A.CD || '@:@' || B.CD) AS VALUE
+		FROM ${db.mainschema}.CODE_COMMON A
+		    LEFT OUTER JOIN ${db.mainschema}.CODE_COMMON B
+		        ON B.CD LIKE SUBSTR(A.CD, 1, 2)||'%'
+		WHERE A.TABLE_NM = 'CUSTOMER_DRY'
+		AND A.COL = 'REQ_TYPE1'
+		AND B.COL = 'REQ_TYPE2'
+		AND (A.CD_NM LIKE '%'||UPPER(#{value})||'%' OR B.CD_NM LIKE '%'||UPPER(#{value})||'%')
+	</select>
+	
+	<select id="_customer_view_diary_list_popup_req_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_CUSTOMER_DRY(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{diary_id,mode=IN,jdbcType=VARCHAR},
+		#{req_gubun,mode=IN,jdbcType=VARCHAR},
+		#{service_number,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{req_user_name,mode=IN,jdbcType=VARCHAR},
+		#{req_user_gubun,mode=IN,jdbcType=VARCHAR},
+		#{req_type1,mode=IN,jdbcType=VARCHAR},
+		#{req_type2,mode=IN,jdbcType=VARCHAR},
+		#{req_body,mode=IN,jdbcType=VARCHAR},
+		#{res_body,mode=IN,jdbcType=VARCHAR},
+		#{reg_date,mode=IN,jdbcType=VARCHAR},
+		#{res_status,mode=IN,jdbcType=VARCHAR},
+		#{status,mode=IN,jdbcType=VARCHAR},
+		#{res_date,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_SERVER_NAME,mode=IN,jdbcType=VARCHAR},	
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="customer_view_diary_list_regist_popup_info" parameterType="map" resultType="egovMap">
+		SELECT ${db.mainschema}.F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', #{account}) TELCO, ${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', 'ALL', #{account}) NO_MASK_CUST_FRST_NM
+	</select>
+	
+</mapper>

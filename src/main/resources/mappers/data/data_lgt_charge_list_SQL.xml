@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.data_lgt_charge_list">
+	<sql id="data_lgt_charge_list">
+	<![CDATA[
+	
+		SELECT /*+ index_desc(a LGT_CHARGE_IDX3) */
+		  	   A.BAN,
+			   A.NCN,
+			   A.SERVICE_ACCOUNT,
+			   A.SERVICE_TYPE,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM,
+			   ${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'LGT', A.SERVICE_ACCOUNT) SERVICE_NUMBER,
+			   TO_CHAR(BILL_TRGT_YYMM, 'YYYY-MM') BILL_TRGT_YYMM,
+			   TO_CHAR(PYM_DDAY_DT, 'YYYY-MM-DD') PYM_DDAY_DT,
+			   TO_CHAR(RFLCT_DT, 'YYYY-MM-DD') RFLCT_DT,
+			   TO_CHAR(RCPMNY_DT, 'YYYY-MM-DD') RCPMNY_DT,
+			   PYM_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CHARGE', 'PYM_CD', PYM_CD) PYM_CD_NM,
+			   BLITEM_CD,
+			   BLITEM_NM,
+			   PYM_MTHD_CD,
+			   PYM_MTHD_NM,
+			   PYM_MTHD_DETL_CD,
+			   PYM_MTHD_DETL_NM,
+			   ADJMT_RSN_CD,
+			   ADJMT_RSN_NM,
+			   BLNC_RFLCT_KD_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CHARGE', 'BLNC_RFLCT_KD_CD', BLNC_RFLCT_KD_CD) BLNC_RFLCT_KD_CD_NM,
+			   TRUNC(PYM_AMT, 2) PYM_AMT,
+			   TRUNC(VAT_AMT, 2) VAT_AMT,
+			   TRUNC(PYM_AMT + VAT_AMT, 2) TOT_AMT,
+			   AGENT_ID,
+			   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM
+		   ]]>
+		FROM ${db.mainschema}.LGT_CHARGE A
+		WHERE BILL_TRGT_YYMM > to_date('2020-01-01', 'yyyy-mm-dd')
+			AND PYM_CD IN ('INV', 'ADJR', 'ADJ')
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (SERVICE_ACCOUNT =  ${db.mainschema}.F_GET_ACCOUNT('LGT', #{sword}) OR SERVICE_ACCOUNT =  ${db.mainschema}.F_GET_ACCOUNT('LGT', '010' || #{sword}))
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+					
+		<if test="service_type != '' and service_type != null ">
+			<choose>
+				<when test="service_type == 'NULL'">
+				    AND A.SERVICE_TYPE IS NULL
+				</when>
+				<otherwise>
+					AND A.SERVICE_TYPE = #{service_type}
+				</otherwise>
+			</choose>
+   	    </if>
+   	    
+		<choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+		   	    AND BILL_TRGT_YYMM >= TO_DATE(#{s_dt} || '-01', 'YYYY-MM-DD')
+				AND BILL_TRGT_YYMM &lt;= TO_DATE(#{e_dt} || '-01', 'YYYY-MM-DD')				
+			</when>
+			<otherwise>
+				AND A.SERVICE_ACCOUNT = '999999999999999999999'
+			</otherwise>
+		</choose>
+   	    
+	</sql>
+	<sql id="data_lgt_charge_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_lgt_charge_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_lgt_charge_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BAN,
+			fq.NCN,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_TYPE,
+			fq.SERVICE_TYPE_NM,
+			fq.SERVICE_NUMBER,
+			fq.BILL_TRGT_YYMM,
+			fq.PYM_DDAY_DT,
+			fq.RFLCT_DT,
+			fq.RCPMNY_DT,
+			fq.PYM_CD,
+			fq.PYM_CD_NM,
+			fq.BLITEM_CD,
+			fq.BLITEM_NM,
+			fq.PYM_MTHD_CD,
+			fq.PYM_MTHD_NM,
+			fq.PYM_MTHD_DETL_CD,
+			fq.PYM_MTHD_DETL_NM,
+			fq.ADJMT_RSN_CD,
+			fq.ADJMT_RSN_NM,
+			fq.BLNC_RFLCT_KD_CD,
+			fq.BLNC_RFLCT_KD_CD_NM,
+			fq.PYM_AMT,
+			fq.VAT_AMT,
+			fq.TOT_AMT,
+			fq.AGENT_ID,
+			fq.AGENT_NM
+	]]>
+		<include refid="data_lgt_charge_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="data_lgt_charge_list" />
+		ORDER BY A.BILL_TRGT_YYMM DESC, A.SERVICE_ACCOUNT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_lgt_charge_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_lgt_charge_list_add" /><![CDATA[
+	            ]]><include refid="data_lgt_charge_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_lgt_charge_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_lgt_charge_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_lgt_charge_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<select id="data_lgt_charge_list_tot_sum" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT 
+			PAY,
+		   	SALE,
+		   	VAT,
+		   	PAY + VAT + SALE SUM,
+		   	ETC
+		FROM (
+			SELECT
+	            SUM((CASE WHEN PYM_CD = 'INV' THEN PYM_AMT ELSE 0 END)) PAY,
+			    SUM((CASE WHEN PYM_CD = 'ADJ' THEN PYM_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN PYM_AMT ELSE 0 END)) SALE,
+			    SUM((CASE WHEN PYM_CD = 'INV' THEN VAT_AMT WHEN PYM_CD = 'ADJ' THEN VAT_AMT * (-1) WHEN PYM_CD = 'ADJR' THEN VAT_AMT ELSE 0 END)) VAT,
+			    SUM((CASE WHEN PYM_CD = 'INV' THEN 0 WHEN PYM_CD = 'ADJ' THEN 0 WHEN PYM_CD = 'ADJR' THEN 0 ELSE PYM_AMT END)) ETC
+	        FROM
+	            (
+	            ]]><include refid="data_lgt_charge_list" /><![CDATA[
+	            )
+	    )
+	]]>
+	</select>
+</mapper>

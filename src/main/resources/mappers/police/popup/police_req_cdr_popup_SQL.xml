@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.police.police_req_cdr_popup">
+	<select id="police_req_cdr_popup_sch" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 	BAN AS CHARGE_SERVICE_ACCOUNT, 
+				NCN, 
+				SERVICE_ACCOUNT, 
+				CNMLOB AS NO_MASK_CUSTOMER_NAME, 
+				SERVICE_NUMBER NO_MASK_SERVICE_NUMBER
+		 FROM 	${db.mainschema}.CUSTOMER_LGT A,
+			 	${db.mainschema}.LGT_SUB B,
+			 	${db.mainschema}.LGT_CUS C
+		 WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			 AND B.CUSTOMER_ID = C.CUSTOMER_ID
+			 AND A.SERVICE_ACCOUNT = #{account}
+			 AND (STATUS IN ('A', 'S') OR (STATUS = 'C' AND CANCEL_DT > NOW() - INTERVAL '12 months'))
+		]]>
+	</select>
+	
+	<select id="police_req_cdr_popup_sch2" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT 
+		    NO_MASK_SERVICE_NUMBER,
+		    SERVICE_ACCOUNT,
+		    (CASE WHEN MOD_DT = NOW() THEN (SELECT (CASE WHEN STATUS = 'A' THEN 'NOW' WHEN STATUS = 'S' THEN 'NOW' ELSE 'C' END) FROM ${db.mainschema}.LGT_SUB WHERE CONTRACT_NUM = A.SERVICE_ACCOUNT) ELSE TO_CHAR(MOD_DT, 'YY/MM/DD') END) MOD_DT
+		FROM(
+		    SELECT 
+		        NO_MASK_SERVICE_NUMBER,
+		        SERVICE_ACCOUNT,
+		        MAX(MOD_DT) MOD_DT
+		    FROM(
+		        SELECT SERVICE_NUMBER NO_MASK_SERVICE_NUMBER,
+		                CONTRACT_NUM SERVICE_ACCOUNT,
+		                NOW() MOD_DT
+		            FROM ${db.mainschema}.LGT_SUB 
+		            WHERE (CONTRACT_NUM = #{service_number} OR SERVICE_NUMBER = #{service_number})
+		                AND CONTRACT_NUM IN (
+		                    SELECT A.SERVICE_ACCOUNT
+		                        FROM ${db.mainschema}.CUSTOMER_LGT A,
+		                             ${db.mainschema}.LGT_SUB B
+		                     WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+		                         AND (STATUS IN ('A', 'S') OR (STATUS = 'C' AND CANCEL_DT > NOW() - INTERVAL '12 months'))
+		                )
+		        UNION ALL
+		        SELECT OLD_CTN NO_MASK_SERVICE_NUMBER,
+		            SERVICE_ACCOUNT,
+		            MOD_DT
+		        FROM ${db.mainschema}.CUSTOMER_CTN_HIST
+		        WHERE (SERVICE_ACCOUNT =  #{service_number} OR OLD_CTN = #{service_number})
+		            AND SERVICE_ACCOUNT IN (
+		                SELECT A.SERVICE_ACCOUNT
+		                    FROM ${db.mainschema}.CUSTOMER_LGT A,
+		                         ${db.mainschema}.LGT_SUB B
+		                 WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+		                     AND (STATUS IN ('A', 'S') OR (STATUS = 'C' AND CANCEL_DT > NOW() - INTERVAL '12 months'))
+		            )
+		    )
+		    GROUP BY NO_MASK_SERVICE_NUMBER, SERVICE_ACCOUNT
+		) A
+		ORDER BY A.MOD_DT DESC
+		]]>
+	</select>
+	
+	<select id="police_req_cdr_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_POLICE_CALL_CDR(
+		#{op_code,mode=IN,jdbcType=VARCHAR},
+		#{seq,mode=IN,jdbcType=VARCHAR},
+		#{police_seq,mode=IN,jdbcType=VARCHAR},
+		#{request_seq,mode=IN,jdbcType=VARCHAR},
+		#{inqCausJobDvCd,mode=IN,jdbcType=VARCHAR},
+		#{crsdoctypecd,mode=IN,jdbcType=VARCHAR},
+		#{inqPrssStrtDttm,mode=IN,jdbcType=VARCHAR},
+		#{inqPrssEndDttm,mode=IN,jdbcType=VARCHAR},
+		#{billAcntNo,mode=IN,jdbcType=VARCHAR},
+		#{aceno,mode=IN,jdbcType=VARCHAR},
+		#{entrNo,mode=IN,jdbcType=VARCHAR},
+		#{bsctXclnYn,mode=IN,jdbcType=VARCHAR},
+		#{ctn,mode=IN,jdbcType=VARCHAR},
+		#{custNm,mode=IN,jdbcType=VARCHAR},
+		#{crsdocrcptno,mode=IN,jdbcType=VARCHAR},
+		#{histsrlno,mode=IN,jdbcType=VARCHAR},
+		#{prsssttsnm,mode=IN,jdbcType=VARCHAR},
+		#{prsscnt,mode=IN,jdbcType=VARCHAR},
+		#{errcdnm,mode=IN,jdbcType=VARCHAR},
+		#{strgfilenm,mode=IN,jdbcType=VARCHAR},
+		#{dupprsscnt,mode=IN,jdbcType=VARCHAR},
+		#{ret_cd,mode=IN,jdbcType=VARCHAR},
+		#{ret_msg,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=BIGINT},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+</mapper>

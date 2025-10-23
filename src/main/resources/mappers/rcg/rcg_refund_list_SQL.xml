@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.rcg.rcg_refund_list">
+	<sql id="rcg_refund_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A RCG_REFUND_IDX1) */
+		    SEQ,
+			SERVICE_ACCOUNT,
+			F_FORMAT_PH(F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT), 'N') SERVICE_NUMBER,
+			(CASE WHEN GUBUN = 'AGENT' THEN SERVICE_ACCOUNT ELSE '' END) AGENT_ID,
+			(CASE WHEN GUBUN = 'AGENT' THEN F_GET_AGENT_INFO('AGENT_NAME', SERVICE_ACCOUNT) ELSE '' END) AGENT_NM,
+			(CASE GUBUN WHEN 'LGT' THEN GUBUN WHEN 'KT' THEN GUBUN WHEN 'SKT' THEN GUBUN ELSE '' END) TELCO,
+			GUBUN,
+			F_GET_COMMON_CD_NM('RCG_REFUND', 'GUBUN', GUBUN) GUBUN_NM,
+			CUST_NM,
+			CUST_PHONE,
+			REFUND_CD,
+			F_GET_COMMON_CD_NM('RCG_REFUND', 'REFUND_CD', REFUND_CD) REFUND_CD_NM,
+			DESC_INFO,
+			AMOUNT,
+			TO_CHAR(ENTER_DT, 'YYYY-MM-DD') ENTER_DT,
+			F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			PAYB_CODE,
+			F_GET_COMMON_CD_NM('RCG_REFUND', 'PAYB_CODE', PAYB_CODE) PAYB_CODE_NM
+		   ]]>
+		FROM RCG_REFUND A 
+		WHERE ENTER_DT >= TO_DATE('2011-01-01','YYYY-MM-DD')
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'customer_name'">
+						AND (CUST_NM LIKE = UPPER(#{sword}) OR CUST_NM LIKE = LOWER(#{sword}))
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+					
+				</choose>
+			</when>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("ENTER_DT", null, s_dt, e_dt, "Y", null)}
+		
+		<if test="refund_cd != '' and refund_cd != null ">
+	   	    AND REFUND_CD = #{refund_cd}
+   	    </if>
+   	    
+   	    <if test="payb_code != '' and payb_code != null ">
+	   	    AND PAYB_CODE = #{payb_code}
+   	    </if>
+   	    
+   	    <if test="gubun != '' and gubun != null ">
+	   	    AND GUBUN = #{gubun}
+   	    </if>
+		
+	</sql>
+	<sql id="rcg_refund_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="rcg_refund_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="rcg_refund_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.AGENT_ID,
+			fq.AGENT_NM,
+			fq.TELCO,
+			fq.GUBUN,
+			fq.GUBUN_NM,
+			fq.CUST_NM,
+			fq.CUST_PHONE,
+			fq.REFUND_CD,
+			fq.REFUND_CD_NM,
+			fq.DESC_INFO,
+			fq.AMOUNT,
+			fq.ENTER_DT,
+			fq.ADMIN_NM,
+			fq.PAYB_CODE,
+			fq.PAYB_CODE_NM
+	]]>
+			<include refid="rcg_refund_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="rcg_refund_list" />
+			ORDER BY A.ENTER_DT DESC, A.SERVICE_ACCOUNT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="rcg_refund_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="rcg_refund_list_add" /><![CDATA[
+	            ]]><include refid="rcg_refund_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="rcg_refund_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="rcg_refund_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="rcg_refund_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

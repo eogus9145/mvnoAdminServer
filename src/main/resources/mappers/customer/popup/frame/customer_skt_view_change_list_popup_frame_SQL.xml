@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_skt_view_change_list_popup_frame">
+	<sql id="customer_skt_view_change_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A SKT_CHANGE_HIS_IDX3) */
+						ACT_CODE,
+						F_GET_COMMON_CD_NM('SKT_CHANGE_HIS', 'ACT_CODE', ACT_CODE) ACT_CODE_NM,
+						COL,
+						F_GET_COMMON_CD_NM('SKT_CHANGE_HIS','COL',COL) COL_NM,
+						OLD_VAL,
+						NEW_VAL1,
+						F_GET_CHANGE_HIS_VAL(COL, NEW_VAL1, '1') NEW_VAL1_NM,
+						NEW_VAL2,
+						F_GET_CHANGE_HIS_VAL(COL, NEW_VAL2, '2') NEW_VAL2_NM,
+						TO_CHAR(CHG_DT, 'YYYY-MM-DD HH24:MI:SS') CHG_DT,
+						TO_CHAR(PROC_DATE, 'YYYY-MM-DD HH24:MI:SS') PROC_DATE,
+						ERR,
+						PROC_ID,
+						CASE WHEN SETNULL(F_GET_ADMIN_INFO('ADMIN_NAME',PROC_ID)) IS NULL THEN PROC_ID ELSE F_GET_ADMIN_INFO('ADMIN_NAME',PROC_ID) END AS ADMIN_NAME
+		 FROM SKT_CHANGE_HIS A
+		 WHERE SERVICE_ACCOUNT = #{account}
+	]]>
+		
+			${@telecentro.common.service.CommonUtil@get_section_query("CHG_DT", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	
+	<sql id="customer_skt_view_change_list_popup_frame_add">
+	<![CDATA[		
+	]]>
+	</sql>
+	
+	<select id="customer_skt_view_change_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+			fq.ACT_CODE,
+			fq.ACT_CODE_NM,
+			fq.COL,
+			fq.COL_NM,
+			fq.OLD_VAL,
+			fq.NEW_VAL1,
+			fq.NEW_VAL1_NM,
+			fq.NEW_VAL2,
+			fq.NEW_VAL2_NM,
+			fq.CHG_DT,
+			fq.PROC_DATE,
+			fq.ERR,
+			fq.PROC_ID,
+			fq.ADMIN_NAME
+	]]>
+			<include refid="customer_skt_view_change_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="customer_skt_view_change_list_popup_frame" />
+			ORDER BY A.SERVICE_ACCOUNT DESC, A.CHG_DT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_skt_view_change_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_skt_view_change_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_skt_view_change_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_skt_view_change_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_skt_view_change_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

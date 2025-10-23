@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.setup.data_list">
+	<sql id="data_list">
+		(SELECT 
+			/*+ index_desc(a board_data_idx) */
+			BOARD_SEQ,
+			BOARD_TYPE,
+			TITLE,
+			BODY,
+			VIEW_COUNT,
+			USER_IMG,
+			USER_IP,
+			AGENT_ID,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			NICK_NAME,
+			PASSWD,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI') RECORD_DATE,
+			LOCK_FLAG,
+			TOP_FLAG,
+			READ_FLAG,
+			CASE WHEN RECORD_DATE > NOW() - INTERVAL '7 days' THEN 'Y'
+				ELSE ''
+			END NEW_FLAG
+		FROM ${db.mainschema}.BOARD_DATA A 
+		WHERE RECORD_DATE >= TO_DATE('20150101', 'YYYYMMDD')
+			AND TOP_FLAG = 'Y'
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'title'">
+					    AND TITLE LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'body'">
+					    AND BODY LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'nick_name'">
+					    AND NICK_NAME LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	
+		ORDER BY A.RECORD_DATE DESC)
+		
+		UNION ALL
+		
+		(SELECT 
+			/*+ index_desc(a board_data_idx) */
+			BOARD_SEQ,
+			BOARD_TYPE,
+			TITLE,
+			BODY,
+			VIEW_COUNT,
+			USER_IMG,
+			USER_IP,
+			AGENT_ID,
+			${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+			NICK_NAME,
+			PASSWD,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI') RECORD_DATE,
+			LOCK_FLAG,
+			TOP_FLAG,
+			READ_FLAG,
+			CASE WHEN RECORD_DATE > NOW() - INTERVAL '7 days' THEN 'Y'
+				ELSE ''
+			END NEW_FLAG
+		FROM ${db.mainschema}.BOARD_DATA A 
+		WHERE RECORD_DATE >= TO_DATE('20150101', 'YYYYMMDD')
+			AND TOP_FLAG = 'N'
+			
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'title'">
+					    AND TITLE LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'body'">
+					    AND BODY LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'nick_name'">
+					    AND NICK_NAME LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>	  
+		ORDER BY A.RECORD_DATE DESC)
+	</sql>
+	<sql id="data_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BOARD_SEQ,
+			fq.BOARD_TYPE,
+			fq.TITLE,
+			fq.BODY,
+			fq.VIEW_COUNT,
+			fq.USER_IMG,
+			fq.USER_IP,
+			fq.AGENT_ID,
+			fq.ADMIN_NM,
+			fq.NICK_NAME,
+			fq.PASSWD,
+			fq.RECORD_DATE,
+			fq.LOCK_FLAG,
+			fq.TOP_FLAG,
+			fq.READ_FLAG,
+			fq.NEW_FLAG
+	]]>
+		<include refid="data_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="data_list" />
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_list_add" /><![CDATA[
+	            ]]><include refid="data_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 자료실 파일다운 경로를 얻는다 -->
+	<select id="data_list_down_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT USER_FILE
+	    FROM ${db.mainschema}.BOARD_DATA
+	    WHERE BOARD_SEQ = CAST(#{no} AS BIGINT)
+		]]>
+	</select>
+</mapper>

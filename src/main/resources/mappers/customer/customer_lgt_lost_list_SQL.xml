@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_lost_list">
+	<sql id="customer_lgt_lost_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A LGT_DSLOSS_IDX1 ) */
+			   	SEQ,
+				SERVICE_ACCOUNT,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'LGT', SERVICE_ACCOUNT) SERVICE_NUMBER,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', 'LGT', SERVICE_ACCOUNT) CNMLOB,
+				SELUNIT, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'SELUNIT', SELUNIT) SELUNIT_NM,
+				CUSTCTPLCTELNO, 
+				RCPTDVCD, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'RCPTDVCD', RCPTDVCD) RCPTDVCD_NM,
+				SUSYN, 
+				ICALLPHBYN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'ICALLPHBYN', ICALLPHBYN) ICALLPHBYN_NM,
+				INSERT_TYPE, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'INSERT_TYPE', INSERT_TYPE) INSERT_TYPE_NM,
+				TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI') REG_DT, 
+				COALESCE(${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN), REG_ADMIN) REG_ADMIN_NM,
+				REMARK, 
+				RES_CD,
+				(CASE WHEN RES_CD = '0000' THEN '성공' WHEN RES_CD = '0001' THEN '진행중' ELSE RES_CD END) RES_CD_NM, 
+				RES_MSG
+			   ]]>
+			FROM   ${db.mainschema}.LGT_DSLOSS A
+			WHERE REG_DT > TO_DATE('20150101', 'YYYYMMDD')
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_account'">
+						    AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'service_number'">
+							 AND (A.SERVICE_ACCOUNT = (${db.mainschema}.F_GET_ACCOUNT('LGT', #{sword})) OR A.SERVICE_ACCOUNT = (${db.mainschema}.F_GET_ACCOUNT('LGT', '010' || #{sword})))
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+					
+				</when>
+			</choose>	  
+			
+			
+			<choose>
+				<when test='service_type == "1"'>
+				  	AND A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.CUSTOMER_LGT WHERE SERVICE_TYPE = '1')
+				</when>
+				<when test='service_type == "2"'>
+				  	AND A.SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.CUSTOMER_LGT WHERE SERVICE_TYPE = '2')
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+			
+			<if test="insert_type != '' and insert_type != null ">
+		   	    AND A.INSERT_TYPE = #{insert_type}
+	   	    </if>
+	   	    
+	   	    <choose>
+				<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+					${@telecentro.common.service.CommonUtil@get_section_query("REG_DT", null, s_dt, e_dt, "Y", null)}				
+				</when>
+				<otherwise>
+					A.SERVICE_ACCOUNT = '99999999999999999999';
+				</otherwise>
+			</choose>
+	   	    			
+	</sql>
+	<sql id="customer_lgt_lost_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_lgt_lost_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_lgt_lost_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.CNMLOB,
+			fq.SELUNIT, 
+			fq.SELUNIT_NM,
+			fq.CUSTCTPLCTELNO, 
+			fq.RCPTDVCD, 
+			fq.RCPTDVCD_NM,
+			fq.SUSYN, 
+			fq.ICALLPHBYN,
+			fq.ICALLPHBYN_NM,
+			fq.INSERT_TYPE, 
+			fq.INSERT_TYPE_NM,
+			fq.REG_DT, 
+			fq.REG_ADMIN_NM,
+			fq.REMARK, 
+			fq.RES_CD, 
+			fq.RES_CD_NM,
+			fq.RES_MSG
+	]]>
+		<include refid="customer_lgt_lost_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_lost_list" />
+		ORDER BY A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_lost_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_lost_list_add" /><![CDATA[
+	            ]]><include refid="customer_lgt_lost_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_lost_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_lost_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_lost_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

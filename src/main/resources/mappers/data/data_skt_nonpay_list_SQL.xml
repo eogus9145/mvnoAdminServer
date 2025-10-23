@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.data_skt_nonpay_list">
+	<sql id="data_skt_nonpay_list">
+	<![CDATA[
+		SELECT 
+			EVENT_GUBUN, 
+			SERVICE_ACCOUNT, 
+			SERVICE_NUMBER,
+			CUST_FRST_NM, 
+			TO_CHAR(BILL_DT, 'YYYY-MM') BILL_DT, 
+			BILL_PRICE, 
+			NON_PAY_PRICE, 
+			BILL_ZIP, 
+			BILL_ADDR, 
+			CUST_PHONE, 
+			SERVICE_STATUS, 
+			TO_CHAR(STOP_DT, 'YYYY-MM-DD') STOP_DT, 
+			TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT, 
+			INPUT_ACCOUNT_BANK1, 
+			INPUT_ACCOUNT_NUM1, 
+			INPUT_ACCOUNT_GUBUN,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD HH24:MI:SS') RECORD_DATE
+		FROM SKT_EVENT_FEE A
+		WHERE 1 = 1
+	]]>
+		
+		<if test="s_dt != '' and s_dt != null ">
+			AND RECORD_DATE >= TO_DATE(#{s_dt}, 'YYYY-MM-DD')
+   	    </if>
+   	    
+   	    <if test="e_dt != '' and e_dt != null ">
+			AND RECORD_DATE &lt; TO_DATE(#{e_dt}, 'YYYY-MM-DD') +1
+   	    </if>
+   	    
+   	    <if test="s_b_month != '' and s_b_month != null ">
+	   	    AND BILL_DT >= TO_DATE(#{s_b_month} || '-01', 'YYYY-MM-DD')
+   	    </if>
+   	    
+   	    <if test="e_b_month != '' and e_b_month != null ">
+	   	    AND BILL_DT &lt; ADD_MONTHS(TO_DATE(#{e_b_month} || '-01', 'YYYY-MM-DD'), 1)
+   	    </if>
+		
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'service_number'">
+						AND (SERVICE_ACCOUNT =  F_GET_ACCOUNT('SKT', #{sword}) OR SERVICE_ACCOUNT =  F_GET_ACCOUNT('SKT', '010' || #{sword}))
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise> 
+				</choose>
+			</when>
+		</choose>	  
+			
+	</sql>
+	<sql id="data_skt_nonpay_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_nonpay_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_nonpay_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.EVENT_GUBUN, 
+			fq.SERVICE_ACCOUNT, 
+			fq.SERVICE_NUMBER,
+			fq.CUST_FRST_NM, 
+			fq.BILL_DT, 
+			fq.BILL_PRICE, 
+			fq.NON_PAY_PRICE, 
+			fq.BILL_ZIP, 
+			fq.BILL_ADDR, 
+			fq.CUST_PHONE, 
+			fq.SERVICE_STATUS, 
+			fq.STOP_DT, 
+			fq.CANCEL_DT, 
+			fq.INPUT_ACCOUNT_BANK1, 
+			fq.INPUT_ACCOUNT_NUM1, 
+			fq.INPUT_ACCOUNT_GUBUN,
+			fq.RECORD_DATE
+	]]>
+			<include refid="data_skt_nonpay_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_nonpay_list" />
+			<choose>
+				<when test="s_dt != '' and s_dt != null">
+					ORDER BY A.RECORD_DATE DESC
+				</when>
+				<otherwise>
+					ORDER BY A.BILL_DT DESC
+				</otherwise>
+			</choose>			
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_nonpay_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_nonpay_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_nonpay_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_nonpay_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_nonpay_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_nonpay_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

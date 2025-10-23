@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.lgt_sub_list">
+	<sql id="lgt_sub_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A LGT_SUB_IDX1) */
+		    CONTRACT_NUM, 
+		    BAN, 
+		    CUSTOMER_ID, 
+		    ${db.mainschema}.F_FORMAT_PH(SERVICE_NUMBER, 'N') SERVICE_NUMBER, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', STATUS), STATUS) STATUS_NM,
+		    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(USSN), 'N') USSN,
+		    MODNM, 
+		    NCN, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'GRADECD', GRADECD), GRADECD) GRADECD_NM, 
+		    IMSI, 
+		    ICCID, 
+		    DEALERCD, 
+		    TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD') LSTCOMACTVDATE, 
+		    TO_CHAR(LSTDEVCHGDATE, 'YYYY-MM-DD HH24:MI:SS') LSTDEVCHGDATE, 
+		    IMEI, 
+		    SRLNO, 
+		    ${db.mainschema}.AES256LOCALDEC(INDYENTSN) INDYENTSN, 
+		    INDYENTNM, 
+		    INSR_MGMT_NO, 
+		    ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'SUB_TYP_CD', COALESCE(SUB_TYP_CD, 'A')) SUB_TYP_CD_NM,
+		    BNP_CO_CD, 
+		    LGREP_NM, 
+		    ${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(LGREP_CTZ_NUM), 'N') LGREP_CTZ_NUM, 
+		    ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'LGREP_ADDR_TYP', COALESCE(LGREP_ADDR_TYP, 'N')) LGREP_ADDR_TYP_NM, 
+		    LGREP_ZIP,
+		    LGREP_ADDR1,
+		    LGREP_ADDR2,		    
+		    LGREP_EMAIL_ADDR, 
+		    LGREP_TEL_NUM, 
+		    USIM_MDL_CD, 
+		    USIM_MDL_NM, 
+		    USIM_SERICAL_NO, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'USIM_TYP_CD', USIM_TYP_CD), USIM_TYP_CD) USIM_TYP_CD_NM, 
+		    USIM_AMT, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'SCRB_FEE_TYP', SCRB_FEE_TYP), SCRB_FEE_TYP) SCRB_FEE_TYP_NM, 
+		    SCRB_FEE, 
+		    ALLOT_MTH_CNT, 
+		    EQUIP_OUT_AMT, 
+		    ALLOT_PRN_AMT, 
+		    ALLOT_INT_AMT, 
+		    ALLOT_FST_PRN_AMT, 
+		    ALLOT_FST_INT_AMT, 
+		    ALLOT_MTH_PRN_AMT, 
+		    ALLOT_MTH_INT_AMT, 
+		    ALLOT_LST_PRN_AMT, 
+		    ALLOT_LST_INT_AMT, 
+		    COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'EQP_CHG_RSN_CD', EQP_CHG_RSN_CD), EQP_CHG_RSN_CD) EQP_CHG_RSN_CD_NM, 
+		    RMND_INSTT_MNTH_CNT, 
+		    DEV_ATMNY_PYM_YN, 
+		    DLR_EXCLV_INFO1, 
+		    DLR_EXCLV_INFO2, 
+		    DLR_EXCLV_INFO3
+		FROM ${db.mainschema}.LGT_SUB A
+		WHERE LSTCOMACTVDATE >= TO_DATE('20150101', 'YYYYMMDD') 
+
+		
+	 	]]>
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_number'">
+						AND (SERVICE_NUMBER = #{sword} OR SERVICE_NUMBER = '010' || #{sword})
+					</when>
+					<when test="sst == 'cnmlob'">
+					  	AND A.CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_CUS WHERE CNMLOB LIKE '%'||UPPER(#{sword})||'%')
+					</when>
+					<when test="sst == 'ussn'">
+						AND A.USSN = ${db.mainschema}.AES256LOCALENC(#{sword}) 
+					</when>
+					<when test="sst == 'uCssn'">
+						AND (A.USSN = ${db.mainschema}.AES256LOCALENC(#{sword}) OR A.CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_CUS WHERE CSSN = ${db.mainschema}.AES256LOCALENC(#{sword}) )) 
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+			<otherwise>
+				<choose>
+					<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+						${@telecentro.common.service.CommonUtil@get_section_query("A.LSTCOMACTVDATE", null, s_dt, e_dt, "Y", null)}					
+					</when>
+					<otherwise>
+						A.CONTRACT_NUM = '99999999999999999999';
+					</otherwise>
+				</choose>
+			</otherwise>
+		</choose>	  
+		
+		${@telecentro.common.service.CommonUtil@get_section_query("A.STAY_EXPIR_DT", null, s_expir_dt, e_expir_dt, "Y", null)}
+					
+   	    <if test="status != '' and status != null ">
+	   	    AND A.STATUS = #{status}
+   	    </if>
+   	    
+   	    <if test="sub_typ_cd != '' and sub_typ_cd != null ">
+	   	    AND A.SUB_TYP_CD = #{sub_typ_cd}
+   	    </if>
+   	    
+	</sql>
+	<sql id="lgt_sub_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="lgt_sub_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="lgt_sub_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.CONTRACT_NUM, 
+			fq.BAN, 
+			fq.CUSTOMER_ID, 
+			fq.SERVICE_NUMBER, 
+			fq.STATUS_NM,
+			fq.USSN,
+			fq.MODNM, 
+			fq.NCN, 
+			fq.GRADECD_NM, 
+			fq.IMSI, 
+			fq.ICCID, 
+			fq.DEALERCD, 
+			fq.LSTCOMACTVDATE, 
+			fq.LSTDEVCHGDATE, 
+			fq.IMEI, 
+			fq.SRLNO, 
+			fq.INDYENTSN, 
+			fq.INDYENTNM, 
+			fq.INSR_MGMT_NO, 
+			fq.SUB_TYP_CD_NM,
+			fq.BNP_CO_CD, 
+			fq.LGREP_NM, 
+			fq.LGREP_CTZ_NUM, 
+			fq.LGREP_ADDR_TYP_NM, 
+			fq.LGREP_ZIP,
+		    fq.LGREP_ADDR1,
+		    fq.LGREP_ADDR2,
+			fq.LGREP_EMAIL_ADDR, 
+			fq.LGREP_TEL_NUM, 
+			fq.USIM_MDL_CD, 
+			fq.USIM_MDL_NM, 
+			fq.USIM_SERICAL_NO, 
+			fq.USIM_TYP_CD_NM, 
+			fq.USIM_AMT, 
+			fq.SCRB_FEE_TYP_NM, 
+			fq.SCRB_FEE, 
+			fq.ALLOT_MTH_CNT, 
+			fq.EQUIP_OUT_AMT, 
+			fq.ALLOT_PRN_AMT, 
+			fq.ALLOT_INT_AMT, 
+			fq.ALLOT_FST_PRN_AMT, 
+			fq.ALLOT_FST_INT_AMT, 
+			fq.ALLOT_MTH_PRN_AMT, 
+			fq.ALLOT_MTH_INT_AMT, 
+			fq.ALLOT_LST_PRN_AMT, 
+			fq.ALLOT_LST_INT_AMT, 
+			fq.EQP_CHG_RSN_CD_NM, 
+			fq.RMND_INSTT_MNTH_CNT, 
+			fq.DEV_ATMNY_PYM_YN, 
+			fq.DLR_EXCLV_INFO1, 
+			fq.DLR_EXCLV_INFO2, 
+			fq.DLR_EXCLV_INFO3
+	]]>
+		<include refid="lgt_sub_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="lgt_sub_list" />
+		ORDER BY A.LSTCOMACTVDATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="lgt_sub_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="lgt_sub_list_add" /><![CDATA[
+	            ]]><include refid="lgt_sub_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="lgt_sub_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="lgt_sub_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="lgt_sub_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.org.admin_list">
+	<sql id="admin_list">
+	<![CDATA[
+	
+		SELECT /*+ INDEX_DESC(A ADMIN_IDX1) */
+		   	ADMIN_ID,
+			AGENT_ID,
+			${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM,
+			ADMIN_NAME,
+			ADMIN_TYPE,
+			${db.mainschema}.F_GET_COMMON_CD_NM('ADMIN','ADMIN_TYPE', ADMIN_TYPE) ADMIN_TYPE_NM,
+			${db.mainschema}.F_FORMAT_PH(MOBILE, 'N') MOBILE,
+			STATUS,
+			${db.mainschema}.F_GET_COMMON_CD_NM('ADMIN','STATUS', STATUS) STATUS_NM,
+			TO_CHAR(RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE,
+			LOGIN_IP,
+			TO_CHAR(LAST_DATE, 'YYYY-MM-DD') LAST_DATE,
+			MAX_TRY_CNT,
+			FAIL_CNT,
+			GRADE
+		   ]]>
+		FROM ${db.mainschema}.ADMIN A
+		WHERE RECORD_DATE > TO_DATE('2015-01-01','YYYY-MM-DD')
+			  AND RECORD_DATE &lt;= NOW()
+	
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'name'">
+					    AND ADMIN_NAME LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'id'">
+						AND ADMIN_ID = #{sword}
+					</when>
+					<when test="sst == 'agent_id'">
+						AND AGENT_ID = #{sword}
+					</when>
+					<when test="sst == 'agent_nm'">
+					  	AND AGENT_ID IN (SELECT AGENT_ID FROM ${db.mainschema}.AGENT WHERE AGENT_NAME LIKE '%' || #{sword} || '%' )
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+				
+			</when>
+		</choose>	  
+		
+		<if test="admin_type != '' and admin_type != null ">
+	   	    AND ADMIN_TYPE = #{admin_type}
+   	    </if>
+   	    
+   	    <if test="status != '' and status != null ">
+	   	    AND STATUS = #{status}
+   	    </if>
+   	    
+	</sql>
+	<sql id="admin_list_add">
+	<![CDATA[
+		, (SELECT GRADE_NAME FROM ${db.mainschema}.ADMIN_GRADE WHERE GRADE=fq.GRADE) AS GRADE_NAME
+		, CASE 
+			WHEN COALESCE(FAIL_CNT, 0) > 4 THEN 'Y'
+			WHEN fq.ADMIN_ID IN (SELECT ADMIN_ID FROM ${db.mainschema}.ACCESS_BLOCK) THEN 'Y'
+			ELSE 'N'
+		END BLOCK_FLAG
+	]]>
+	</sql>
+	<sql id="admin_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="admin_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.ADMIN_ID,
+			fq.AGENT_ID,
+			fq.AGENT_NM,
+			fq.ADMIN_NAME,
+			fq.ADMIN_TYPE,
+			fq.ADMIN_TYPE_NM,
+			fq.MOBILE,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.RECORD_DATE,
+			fq.LOGIN_IP,
+			fq.LAST_DATE,
+			fq.MAX_TRY_CNT,
+			fq.FAIL_CNT,
+			fq.GRADE
+	]]>
+		<include refid="admin_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="admin_list" />
+		ORDER BY A.RECORD_DATE DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+	
+	<select id="admin_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="admin_list_add" /><![CDATA[
+	            ]]><include refid="admin_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="admin_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="admin_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="admin_list" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+	<!-- 관리자관리에서 관리자 차단 해제처리 -->
+	<select id="admin_list_del_block" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ACCESS_BLOCK(
+		#{admin_id,mode=IN,jdbcType=VARCHAR},
+		#{del_reason,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+</mapper>

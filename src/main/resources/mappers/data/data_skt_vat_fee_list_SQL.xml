@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.data_skt_vat_fee_list">
+	<sql id="data_skt_vat_fee_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A SKT_VAT_FEE_IDX2) */
+			   	TO_CHAR(BILL_DT,'YYYY/MM/DD') BILL_DT, 
+				TO_CHAR(VAT_REG_DT,'YYYY/MM/DD') VAT_REG_DT,
+				TAX_BILL_BIZ_NUM,
+				OWNER_NM,
+				CUST_FRST_NM,
+				CUST_FRST_NM CUST_FRST_NM2,
+				SERVICE_ACCOUNT,
+				F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT) SERVICE_NUMBER,
+				UPTAE,
+				JONGMOK,
+				ADDR_INFO,
+				EMAIL_ADDR,
+				SUPPLY_PRICE,
+				TAX_PRICE,
+				SUM_PRICE,
+				PUBLISH_GUBUN,
+				TO_CHAR(RECORD_DATE,'YYYY/MM/DD') RECORD_DATE ,
+				FILE_NAME,
+				ERR
+			FROM SKT_VAT_FEE A 
+			WHERE BILL_DT > TO_DATE('20180901', 'YYYYMMDD')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'service_number'">
+						    AND (A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword})) OR A.SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', '010' || #{sword})))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	
+			
+			${@telecentro.common.service.CommonUtil@get_section_query("BILL_DT", null, s_dt, e_dt, "Y", null)}
+			
+	</sql>
+	<sql id="data_skt_vat_fee_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_vat_fee_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_vat_fee_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.BILL_DT, 
+			fq.VAT_REG_DT,
+			fq.TAX_BILL_BIZ_NUM,
+			fq.OWNER_NM,
+			fq.CUST_FRST_NM,
+			fq.CUST_FRST_NM CUST_FRST_NM2,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.UPTAE,
+			fq.JONGMOK,
+			fq.ADDR_INFO,
+			fq.EMAIL_ADDR,
+			fq.SUPPLY_PRICE,
+			fq.TAX_PRICE,
+			fq.SUM_PRICE,
+			fq.PUBLISH_GUBUN,
+			fq.RECORD_DATE ,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+			<include refid="data_skt_vat_fee_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_vat_fee_list" />
+			ORDER BY A.BILL_DT DESC, A.SERVICE_ACCOUNT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_vat_fee_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_vat_fee_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_vat_fee_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_vat_fee_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_vat_fee_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_vat_fee_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

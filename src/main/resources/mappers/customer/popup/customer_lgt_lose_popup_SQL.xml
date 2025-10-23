@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_lose_popup">
+	<sql id="customer_lgt_lose_popup">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_DSLOSS_IDX2 ) */
+		   	SEQ,
+			SERVICE_ACCOUNT,
+			SELUNIT, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'SELUNIT', SELUNIT) SELUNIT_NM,
+			CUSTCTPLCTELNO, 
+			RCPTDVCD, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'RCPTDVCD', RCPTDVCD) RCPTDVCD_NM,
+			SUSYN, 
+			ICALLPHBYN,
+			${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'ICALLPHBYN', ICALLPHBYN) ICALLPHBYN_NM,
+			INSERT_TYPE, 
+			${db.mainschema}.F_GET_COMMON_CD_NM('LGT_DSLOSS', 'INSERT_TYPE', INSERT_TYPE) INSERT_TYPE_NM,
+			TO_CHAR(REG_DT, 'YYYY-MM-DD HH24:MI') REG_DT, 
+			COALESCE(${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN), REG_ADMIN) REG_ADMIN_NM,
+			REMARK, 
+			RES_CD,
+			(CASE WHEN RES_CD = '0000' THEN '성공' WHEN RES_CD = '0001' THEN '진행중' ELSE RES_CD END) RES_CD_NM, 
+			RES_MSG
+		FROM   ${db.mainschema}.LGT_DSLOSS A
+		WHERE SERVICE_ACCOUNT = #{account}
+			AND REG_DT >= TO_DATE('20150101', 'YYYYMMDD')
+		]]>
+
+	</sql>
+	<select id="customer_lgt_lose_popup" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SEQ,
+			fq.SERVICE_ACCOUNT,
+			fq.SELUNIT, 
+			fq.SELUNIT_NM,
+			fq.CUSTCTPLCTELNO, 
+			fq.RCPTDVCD, 
+			fq.RCPTDVCD_NM,
+			fq.SUSYN, 
+			fq.ICALLPHBYN,
+			fq.ICALLPHBYN_NM,
+			fq.INSERT_TYPE, 
+			fq.INSERT_TYPE_NM,
+			fq.REG_DT, 
+			fq.REG_ADMIN_NM,
+			fq.REMARK, 
+			fq.RES_CD,
+			fq.RES_CD_NM, 
+			fq.RES_MSG
+        FROM (
+	]]>
+		<include refid="customer_lgt_lose_popup" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.REG_DT DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_lose_popup_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_lose_popup" /><![CDATA[
+            )
+	]]>
+	</select>
+
+	<select id="customer_lgt_lose_popup_info" parameterType="map" resultType="egovMap">
+		<![CDATA[
+		SELECT SERVICE_NUMBER NO_MASK_SERVICE_NUMBER
+		FROM ${db.mainschema}.CUSTOMER_LGT A,
+			${db.mainschema}.LGT_SUB B
+		WHERE A.SERVICE_ACCOUNT = B.CONTRACT_NUM
+			AND A.SERVICE_ACCOUNT = #{account}
+			AND B.STATUS IN ('A', 'S')
+		]]>
+	</select>
+	
+	<select id="customer_lgt_lose_popup_update" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_DSLOSS(
+		#{i_service_account,mode=IN,jdbcType=VARCHAR},
+		#{i_selunit,mode=IN,jdbcType=VARCHAR},
+		#{i_custctplctelno,mode=IN,jdbcType=VARCHAR},
+		#{i_rcptdvcd,mode=IN,jdbcType=VARCHAR},
+		#{i_susyn,mode=IN,jdbcType=VARCHAR},
+		#{i_icallPhbYn,mode=IN,jdbcType=VARCHAR},
+		#{i_insert_type,mode=IN,jdbcType=VARCHAR},
+		#{i_remark,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=BIGINT}
+		)
+	</select>
+	
+</mapper>

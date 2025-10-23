@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_diary_list">
+	<sql id="customer_diary_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A CUSTOMER_DRY_DATE_IDX2) */
+			   	SERVICE_ACCOUNT,
+				COALESCE(${db.mainschema}.F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'ALL', SERVICE_ACCOUNT), SERVICE_NUMBER) SERVICE_NUMBER,
+				${db.mainschema}.F_GET_CUSTOMER_INFO('CUST_FRST_NM', 'ALL', SERVICE_ACCOUNT) CUST_FRST_NM,
+				(CASE WHEN TELCO = 'ETC' THEN '미가입' ELSE TELCO END) TELCO,
+				REQ_TYPE1, 
+				REQ_GUBUN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_GUBUN', REQ_GUBUN) REQ_GUBUN_NM,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_TYPE1', REQ_TYPE1) REQ_TYPE1_NM,
+				REQ_TYPE2, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_TYPE2', REQ_TYPE2) REQ_TYPE2_NM,
+				RES_STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'RES_STATUS', RES_STATUS) RES_STATUS_NM,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+				DIARY_ID,
+				REQ_BODY, 
+				RES_BODY, 
+				REQ_USER_NAME,
+				REQ_USER_GUBUN, 
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'REQ_USER_GUBUN', REQ_USER_GUBUN) REQ_USER_GUBUN_NM,
+				STATUS,
+				${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_DRY', 'STATUS', STATUS) STATUS_NM,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', REG_ADMIN) REG_ADMIN_NM,
+				TO_CHAR(RES_END_DATE, 'YYYY-MM-DD HH24:MI') RES_END_DATE
+			FROM ${db.mainschema}.CUSTOMER_DRY A 
+			WHERE REG_DATE > TO_DATE('20100101', 'YYYYMMDD')
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'reg_admin'">
+						    AND REG_ADMIN IN (SELECT ADMIN_ID FROM ${db.mainschema}.ADMIN WHERE ADMIN_NAME LIKE '%'||#{sword}||'%')
+						</when>
+						<when test="sst == 'service_number'">
+							AND (A.SERVICE_NUMBER = #{sword} OR (A.SERVICE_ACCOUNT IN (SELECT CONTRACT_NUM FROM ${db.mainschema}.LGT_SUB WHERE SERVICE_NUMBER = #{sword})))
+						</when>
+						<when test="sst == 'req_user_name'">
+							AND (REQ_USER_NAME LIKE '%'||UPPER(#{sword})||'%' OR REQ_USER_NAME LIKE '%'||LOWER(#{sword})||'%')
+						</when>
+						<when test="sst == 'customer_name'">
+							AND SERVICE_ACCOUNT IN (SELECT SERVICE_ACCOUNT FROM ${db.mainschema}.LGT_SUB WHERE CUSTOMER_ID IN (SELECT CUSTOMER_ID FROM ${db.mainschema}.LGT_CUS WHERE CNMLOB LIKE '%'||UPPER(#{sword})||'%'))
+						</when>
+						<when test="sst == 'service_account'">
+						  	AND A.SERVICE_ACCOUNT = #{sword}
+						</when>
+						<when test="sst == 'req_body'">
+						  	AND REQ_BODY LIKE '%' || #{sword} || '%'
+						</when>
+						<when test="sst == 'res_body'">
+						  	AND RES_BODY LIKE '%' || #{sword} || '%'
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>
+			
+			<if test="sword2 != '' and sword2 != null ">
+		   	    AND REQ_BODY LIKE '%' || #{sword2} || '%'
+	   	    </if>
+	   	    
+	   	    <if test="req_type1 != '' and req_type1 != null ">
+		   	    AND REQ_TYPE1 = #{req_type1}
+	   	    </if>
+	   	    
+	   	    <if test="req_type2 != '' and req_type2 != null ">
+		   	    AND REQ_TYPE2 = #{req_type2}
+	   	    </if>
+	   	    
+	   	    <if test="res_status != '' and res_status != null ">
+		   	    AND RES_STATUS = #{res_status}
+	   	    </if>
+	   	    
+	   	    <if test="status != '' and status != null ">
+		   	    AND STATUS = #{status}
+	   	    </if>
+	   	    
+	   	    <if test="req_gubun != '' and req_gubun != null ">
+		   	    AND REQ_GUBUN = #{req_gubun}
+	   	    </if>
+	   	    
+	   	    <if test="telco != '' and telco != null ">
+		   	    AND TELCO = #{telco}
+	   	    </if>
+	   	    
+	   	    <choose>
+				<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+					AND REG_DATE >= TO_DATE(#{s_dt},'YYYY-MM-DD HH24:MI:SS') 
+					AND REG_DATE &lt;= TO_DATE(#{e_dt},'YYYY-MM-DD HH24:MI:SS') + INTERVAL '1 day'
+				</when>
+				<otherwise>
+					A.SERVICE_ACCOUNT = '99999999999999999999';
+				</otherwise>
+			</choose>
+			
+	</sql>
+	<sql id="customer_diary_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="customer_diary_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="customer_diary_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.CUST_FRST_NM,
+			fq.TELCO,
+			fq.REQ_TYPE1, 
+			fq.REQ_GUBUN, 
+			fq.REQ_GUBUN_NM,
+			fq.REQ_TYPE1_NM,
+			fq.REQ_TYPE2, 
+			fq.REQ_TYPE2_NM,
+			fq.RES_STATUS,
+			fq.RES_STATUS_NM,
+			fq.REG_DATE,
+			fq.DIARY_ID,
+			fq.REQ_BODY, 
+			fq.RES_BODY, 
+			fq.REQ_USER_NAME,
+			fq.REQ_USER_GUBUN, 
+			fq.REQ_USER_GUBUN_NM,
+			fq.STATUS,
+			fq.STATUS_NM,
+			fq.REG_ADMIN_NM,
+			fq.RES_END_DATE
+	]]>
+		<include refid="customer_diary_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_diary_list" />
+		ORDER BY A.REG_DATE DESC, A.STATUS DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_diary_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_diary_list_add" /><![CDATA[
+	            ]]><include refid="customer_diary_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_diary_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_diary_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_diary_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

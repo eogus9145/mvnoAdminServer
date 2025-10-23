@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_view_payment_list_popup_frame">
+	<sql id="customer_lgt_view_payment_list_popup_frame">
+	<![CDATA[
+		SELECT /*+ INDEX_DESC(A LGT_CHARGE_IDX2) */
+			   A.BAN,
+			   A.NCN,
+			   A.SERVICE_ACCOUNT,
+			   TO_CHAR(BILL_TRGT_YYMM, 'YYYY-MM') BILL_TRGT_YYMM,
+			   TO_CHAR(PYM_DDAY_DT, 'YYYY-MM-DD') PYM_DDAY_DT,
+			   TO_CHAR(RFLCT_DT, 'YYYY-MM-DD') RFLCT_DT,
+			   TO_CHAR(RCPMNY_DT, 'YYYY-MM-DD') RCPMNY_DT,
+			   PYM_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CHARGE', 'PYM_CD', PYM_CD) PYM_CD_NM,
+			   BLITEM_CD,
+			   BLITEM_NM,
+			   PYM_MTHD_CD,
+			   PYM_MTHD_NM,
+			   PYM_MTHD_DETL_CD,
+			   PYM_MTHD_DETL_NM,
+			   ADJMT_RSN_CD,
+			   ADJMT_RSN_NM,
+			   BLNC_RFLCT_KD_CD,
+			   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CHARGE', 'BLNC_RFLCT_KD_CD', BLNC_RFLCT_KD_CD) BLNC_RFLCT_KD_CD_NM,
+			   PYM_AMT,
+			   VAT_AMT,
+			   PYM_AMT + VAT_AMT TOT_AMT,
+			   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM
+		 FROM ${db.mainschema}.LGT_CHARGE A 
+		 WHERE SERVICE_ACCOUNT = #{account}
+		 	AND PYM_CD NOT IN ('INV', 'ADJR', 'ADJ')
+		 
+			]]>
+		
+	</sql>
+	<sql id="customer_lgt_view_payment_list_popup_frame_add">
+	<![CDATA[
+		
+	]]>
+	</sql>
+	<select id="customer_lgt_view_payment_list_popup_frame" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+           	fq.BAN,
+			fq.NCN,
+			fq.SERVICE_ACCOUNT,
+			fq.BILL_TRGT_YYMM,
+			fq.PYM_DDAY_DT,
+			fq.RFLCT_DT,
+			fq.RCPMNY_DT,
+			fq.PYM_CD,
+			fq.PYM_CD_NM,
+			fq.BLITEM_CD,
+			fq.BLITEM_NM,
+			fq.PYM_MTHD_CD,
+			fq.PYM_MTHD_NM,
+			fq.PYM_MTHD_DETL_CD,
+			fq.PYM_MTHD_DETL_NM,
+			fq.ADJMT_RSN_CD,
+			fq.ADJMT_RSN_NM,
+			fq.BLNC_RFLCT_KD_CD,
+			fq.BLNC_RFLCT_KD_CD_NM,
+			fq.PYM_AMT,
+			fq.VAT_AMT,
+			fq.TOT_AMT,
+			fq.AGENT_NM
+	]]>
+		<include refid="customer_lgt_view_payment_list_popup_frame_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="customer_lgt_view_payment_list_popup_frame" />
+		ORDER BY A.SERVICE_ACCOUNT DESC, A.BILL_TRGT_YYMM DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="customer_lgt_view_payment_list_popup_frame_excel" parameterType="map"
+		resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="customer_lgt_view_payment_list_popup_frame_add" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="customer_lgt_view_payment_list_popup_frame" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="customer_lgt_view_payment_list_popup_frame_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="customer_lgt_view_payment_list_popup_frame" /><![CDATA[
+            )
+	]]>
+	</select>
+	
+</mapper>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.shop.fax_list">
+	<sql id="fax_list">
+	<![CDATA[
+	
+		SELECT	/*+ index_desc(a FAX_LIST_IDX1) */
+				A.FAX_SEQ,
+				TO_CHAR(FAX_DATE, 'YY/MM/DD HH24:MI') FAX_DATE,
+				REQ_TYPE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'REQ_TYPE', REQ_TYPE) REQ_TYPE_NM,
+				${db.mainschema}.F_FORMAT_PH(CALLING_NUM, 'N') CALLING_NUM,
+				${db.mainschema}.F_FORMAT_PH(CALLED_NUM, 'N') CALLED_NUM,
+				FAX_FILE_SIZE,
+				FAX_PAGES,
+				FAX_FILE,
+				FAX_CHG_FLAG,
+				FAX_CHG_DT,
+				URL,
+				ACCESS_IP,
+				ACCESS_ID,
+				FAX_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'FAX_GUBUN', FAX_GUBUN) FAX_GUBUN_NM,
+				TELCO,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'TELCO', TELCO) TELCO_NM,
+				PART_GUBUN,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'PART_GUBUN', PART_GUBUN) PART_GUBUN_NM,
+				SERVICE_ACCOUNT,
+				A.AGENT_ID,
+				${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', A.AGENT_ID) AGENT_NM,
+				AGENT_MEMO,
+				ING_CODE,
+				${db.mainschema}.F_GET_COMMON_CD_NM('FAX_LIST', 'ING_CODE', ING_CODE) ING_CODE_NM,
+				ING_REASON,
+				ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', ADMIN_ID) ADMIN_NM,
+				TEL_ADMIN_ID,
+				${db.mainschema}.F_GET_ADMIN_INFO('ADMIN_NAME', TEL_ADMIN_ID) TEL_ADMIN_NM,
+				LOCK_DATE,
+				FAX_DEL_DATE,
+				FAX_DEL_CODE,
+				FAX_MEMO1,
+				FAX_MEMO2,
+				FAX_NOTE,
+				${db.mainschema}.F_GET_LOCK(LOCK_DATE, LOCK_ADMIN, #{SESSION_ADM_ID}) LOCK_FLAG
+		FROM	${db.mainschema}.FAX_LIST A
+		WHERE FAX_DATE > (NOW() - INTERVAL '180 days')
+				AND FAX_CHG_FLAG = 'Y'
+				AND FAX_DEL_DATE IS NULL
+		]]>
+		<choose>
+			<when test="sword != '' and sword != null">
+				<choose>
+					<when test="sst == 'service_account'">
+					    AND A.SERVICE_ACCOUNT = #{sword}
+					</when>
+					<when test="sst == 'fax_memo1'">
+					    AND A.FAX_MEMO1 LIKE '%' || #{sword} || '%'
+					</when>
+					<when test="sst == 'fax_memo2'">
+					    AND A.FAX_MEMO2 LIKE '%' || #{sword} || '%'
+					</when>
+					<otherwise>
+						AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+					</otherwise>
+				</choose>
+			</when>
+		</choose>
+		
+		<if test='fax_gubun != "" and fax_gubun != null'>
+			AND A.FAX_GUBUN = #{fax_gubun}
+		</if>
+		<if test='req_type != "" and req_type != null'>
+			AND A.REQ_TYPE = #{req_type}
+		</if>
+		<if test='ing_code != "" and ing_code != null'>
+			AND A.ING_CODE = #{ing_code}
+		</if>
+		<if test='telco != "" and telco != null'>
+			AND A.TELCO = #{telco}
+		</if>
+		<if test='part_gubun != "" and part_gubun != null'>
+			AND A.PART_GUBUN = #{part_gubun}
+		</if>
+		<if test='ing_code != "" and ing_code != null'>
+			AND A.ING_CODE = #{ing_code}
+		</if>
+		<if test='agent_id != "" and agent_id != null'>
+			AND A.AGENT_ID = #{agent_id}
+		</if>
+		
+		<choose>
+			<when test="s_dt != '' and s_dt != null and e_dt != '' and e_dt != null">
+				${@telecentro.common.service.CommonUtil@get_section_query("FAX_DATE", null, s_dt, e_dt, "Y", null)}			
+			</when>
+			<otherwise>
+				A.SERVICE_ACCOUNT = '99999999999999999999';
+			</otherwise>
+		</choose>
+
+	</sql>
+	<sql id="fax_list_add">
+	<![CDATA[
+		,(SELECT COUNT(*) FROM ${db.mainschema}.FAX_DETAIL A WHERE FAX_SEQ = fq.FAX_SEQ AND USABLE = 'U') DETAIL_CNT
+	]]>
+	</sql>
+	<sql id="fax_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="fax_list" parameterType="map"
+		resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.FAX_SEQ,
+			fq.FAX_DATE,
+			fq.REQ_TYPE,
+			fq.REQ_TYPE_NM,
+			fq.CALLING_NUM,
+			fq.CALLED_NUM,
+			fq.FAX_FILE_SIZE,
+			fq.FAX_PAGES,
+			fq.FAX_FILE,
+			fq.FAX_CHG_FLAG,
+			fq.FAX_CHG_DT,
+			fq.URL,
+			fq.ACCESS_IP,
+			fq.ACCESS_ID,
+			fq.FAX_GUBUN,
+			fq.FAX_GUBUN_NM,
+			fq.TELCO,
+			fq.TELCO_NM,
+			fq.PART_GUBUN,
+			fq.PART_GUBUN_NM,
+			fq.SERVICE_ACCOUNT,
+			fq.AGENT_ID,
+			fq.AGENT_NM,
+			fq.AGENT_MEMO,
+			fq.ING_CODE,
+			fq.ING_CODE_NM,
+			fq.ING_REASON,
+			fq.ADMIN_ID,
+			fq.ADMIN_NM,
+			fq.TEL_ADMIN_ID,
+			fq.TEL_ADMIN_NM,
+			fq.LOCK_DATE,
+			fq.FAX_DEL_DATE,
+			fq.FAX_DEL_CODE,
+			fq.FAX_MEMO1,
+			fq.FAX_MEMO2,
+			fq.FAX_NOTE,
+			fq.LOCK_FLAG
+	]]>
+		<include refid="fax_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+		<include refid="fax_list" />
+		ORDER BY A.FAX_DATE DESC, A.AGENT_ID DESC
+		LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="fax_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="fax_list_add" /><![CDATA[
+	            ]]><include refid="fax_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="fax_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="fax_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="fax_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>

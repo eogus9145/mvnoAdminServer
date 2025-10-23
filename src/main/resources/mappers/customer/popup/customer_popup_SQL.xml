@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.customer_lgt_popup">
+	<select id="customer_lgt_popup1" parameterType="map" resultType="egovMap">
+		SELECT 
+					A.SERVICE_ACCOUNT,
+				   SERVICE_TYPE,
+				   ${db.mainschema}.F_GET_CUSTOMER_INFO('BL_ACNT_NUM', 'LGT', A.SERVICE_ACCOUNT) BL_ACNT_NUM,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_TYPE', A.SERVICE_TYPE) SERVICE_TYPE_NM,
+				   TOTAL_CNT,
+				   TOTAL_CHG,
+				   BALANCE,
+				   TO_CHAR(BASIC_EXPIRE, 'YYYY-MM-DD') BASIC_EXPIRE,
+				   SERVICE_CODE,
+				   ${db.mainschema}.F_GET_SERVICE_CD_NM(SERVICE_CODE) PROD_CD_NM,
+				   (SELECT REMARK FROM ${db.mainschema}.CODE_SERVICE_INFO WHERE PROD_CD = A.SERVICE_CODE) SERVICE_CODE_DESC,
+				   SERVICE_STATUS, 
+				   COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'SERVICE_STATUS', SERVICE_STATUS), '-') SERVICE_STATUS_NM,
+				   AGENT_ID,
+				   ${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NM,
+				   COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_LGT', 'LANG', LANG), '미등록') LANG_NM,
+				   COALESCE(DOC_CNT, 0) DOC_CNT,
+				   COALESCE(CMS_IMG_CNT, 0) CMS_IMG_CNT,
+				   TO_CHAR(TOPUP_E_DT, 'YYYY-MM-DD') TOPUP_E_DT, 
+				   TO_CHAR(STOP_DT, 'YYYY-MM-DD') STOP_DT, 
+				   TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT,
+				   SMS_PHONE, 
+				   TO_CHAR(SYNC_DATE, 'YYYY-MM-DD HH24:MI:SS') SYNC_DATE, 
+				   TO_CHAR(LAST_RECHARGE_DT, 'YYYY-MM-DD') LAST_RECHARGE_DT,
+				   RECHARGE_FLAG,
+				   (CASE WHEN RECHARGE_FLAG = 'Y' THEN '가능' ELSE '불가능' END) RECHARGE_FLAG_STR,
+				   (SELECT ${db.mainschema}.F_GET_COMMON_CD_NM('CUSTOMER_BLACK', 'BLACK_CD', BLACK_CD) CNT FROM ${db.mainschema}.CUSTOMER_BLACK WHERE SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND STATUS = 'A' LIMIT 1) BLACK_RSN, 
+				   (SELECT RCG_AMT FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.SERVICE_CODE) TOPUP_RCG_AMT,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILLMETHCD', ${db.mainschema}.F_GET_CUSTOMER_INFO('PAY_MTHD_CD', 'LGT', A.SERVICE_ACCOUNT)) PAY_MTHD_CD_NM, 
+				   ANP_CO_CD,
+				   ${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'BNP_CO_CD', ANP_CO_CD) ANP_CO_CD_NM,
+				   (
+						  SELECT COUNT(*) 
+						  FROM ${db.mainschema}.CUSTOMER_DOC 
+						  WHERE USABLE='U' 
+								AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT 
+								AND DOC_GUBUN = '30'
+					   ) DOC_AUTO_CNT,
+				   (SELECT 'Y' FROM ${db.mainschema}.CODE_SERVICE_TOPUP_LGT WHERE SERVICE_CODE = A.SERVICE_CODE LIMIT 1) TOPUP_FLAG,
+				   MEMO1,
+				   MEMO2
+				FROM ${db.mainschema}.CUSTOMER_LGT A
+				LEFT JOIN (
+					SELECT COUNT(*) DOC_CNT, SUM(( CASE WHEN DOC_GUBUN = '30' THEN 1 ELSE 0 END)) CMS_IMG_CNT, SERVICE_ACCOUNT
+					FROM ${db.mainschema}.CUSTOMER_DOC
+					WHERE USABLE = 'U'
+						  AND TELCO = 'LGT'
+					GROUP BY SERVICE_ACCOUNT
+				 ) B ON B.SERVICE_ACCOUNT = A.SERVICE_ACCOUNT
+				WHERE A.SERVICE_ACCOUNT = #{account}
+	</select>
+	
+	<select id="customer_lgt_popup2" parameterType="map" resultType="egovMap">
+		SELECT SERVICE_NUMBER,
+						SERVICE_NUMBER NO_MASK_SERVICE_NUMBER, 
+						BAN,
+						TO_CHAR(LSTCOMACTVDATE, 'YYYY-MM-DD HH24:MI:SS') LSTCOMACTVDATE,
+						TERM_ORG_CD,
+						${db.mainschema}.F_GET_AGENT_INFO('AGENT_NAME', TERM_ORG_CD) TERM_ORG_CD_NM,
+						CUSTOMER_ID,
+						STATUS,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'STATUS', STATUS) STATUS_NM,
+						MODNM,
+						SRLNO,
+						IMEI,
+						USIM_TYP_CD,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'USIM_TYP_CD', USIM_TYP_CD) USIM_TYP_CD_NM,
+						USIM_AMT,
+						SCRB_FEE_TYP,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'SCRB_FEE_TYP', SCRB_FEE_TYP) SCRB_FEE_TYP_NM,
+						SCRB_FEE,
+						ALLOT_MTH_CNT,
+						EQUIP_OUT_AMT,
+						ALLOT_PRN_AMT,
+						ALLOT_INT_AMT,
+						ICCID,
+						 (
+							SELECT ( CASE WHEN PRDC_CONT_MTH_CNT IS NULL THEN '' ELSE PRDC_CONT_MTH_CNT || '개월' END)
+								FROM (
+											SELECT PRDC_CONT_MTH_CNT 
+												FROM ${db.mainschema}.LGT_FEATURE 
+												WHERE CONTRACT_NUM = #{account}
+												AND SRVTP = 'P' 
+												AND EVNTDT > NOW()
+												ORDER BY EVNTDT DESC
+										) LIMIT 1
+						) PRDC_CONT_MTH_CNT,
+						(
+							SELECT SUM(DC_PROD_MTH_AMT)
+							 FROM ${db.mainschema}.LGT_FEATURE
+							 WHERE CONTRACT_NUM = #{account}
+							 AND EXPDT > TO_CHAR(NOW(),'YYYYMMDDHH24MISS')
+						) DC_PROD_MTH_AMT,
+						LGREP_NM,
+						LGREP_TEL_NUM,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_BAN', 'BILLMETHCD', ${db.mainschema}.F_GET_CUSTOMER_INFO('BILLMETHCD', 'LGT', BAN)) BILLMETHCD_NM,
+						BNP_CO_CD,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_SUB', 'BNP_CO_CD', BNP_CO_CD) BNP_CO_CD_NM
+				FROM ${db.mainschema}.LGT_SUB A
+				WHERE A.CONTRACT_NUM = #{account}
+	</select>
+	
+	<select id="customer_lgt_popup3" parameterType="map" resultType="egovMap">
+		SELECT TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT,
+						NAT_CD,
+						COALESCE(${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'NAT_CD', NAT_CD), '미등록') NAT_CD_NM,
+						STAY_QUALF_CD,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'STAY_QUALF_CD', A.STAY_QUALF_CD) STAY_QUALF_CD_NM,
+						CNMLOB, 
+						CNMLOB NO_MASK_CNMLOB,
+						${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') CSSN,
+						${db.mainschema}.F_FORMAT_SSN(${db.mainschema}.AES256LOCALDEC(CSSN), 'N') NO_MASK_CSSN,
+						CADDRZIP,
+						CPRMADDRLN,
+						CSECADDRLN,
+						CINDTIND,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CINDTIND', CINDTIND) CINDTIND_NM, 
+						CUSTTP,
+						${db.mainschema}.F_GET_COMMON_CD_NM('LGT_CUS', 'CUSTTP', CUSTTP) CUSTTP_NM
+				FROM ${db.mainschema}.LGT_CUS A
+				WHERE A.CUSTOMER_ID = #{customerId}
+	</select>
+	
+	<select id="customer_skt_popup1" parameterType="map" resultType="egovMap">
+		SELECT A.SERVICE_ACCOUNT,
+			SERVICE_NUMBER,
+			A.PROD_CD,
+			F_GET_SERVICE_CD_NM(A.PROD_CD) PROD_CD_NM,
+			CUST_FRST_NM,
+			CUST_TYP_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CUST_TYP_CD', A.CUST_TYP_CD) CUST_TYP_CD_NM,
+			CTZ_CORP_NUM_TYPE,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'CTZ_CORP_NUM_TYPE', CTZ_CORP_NUM_TYPE) CTZ_CORP_NUM_TYPE_NM,
+			AES256LOCALDEC(ENC_CTZ_CORP_NUM) ENC_CTZ_CORP_NUM,
+			STATUS,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STATUS', STATUS) STATUS_NM,
+			TO_CHAR(A.OPEN_DATE, 'YYYY-MM-DD') OPEN_DATE,
+			CASE STATUS
+				WHEN 'A' THEN TO_CHAR(A.OPEN_DATE, 'YYYY-MM-DD')
+				WHEN 'S' THEN TO_CHAR(B.STOP_DT, 'YYYY-MM-DD')
+				WHEN 'C' THEN TO_CHAR(B.CANCEL_DT, 'YYYY-MM-DD')
+				ELSE TO_CHAR(A.OPEN_DATE, 'YYYY-MM-DD')
+			END AS STATUS_DATE,
+			STAY_QUALF_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'STAY_QUALF_CD', STAY_QUALF_CD) STAY_QUALF_NM,
+			TO_CHAR(STAY_EXPIR_DT, 'YYYY-MM-DD') STAY_EXPIR_DT,
+			NAT_CD,
+			EQP_MDL_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'EQP_MDL_CD', EQP_MDL_CD) EQP_MDL_NM,
+			EQP_SER_NUM,
+			USIM_SER_NUM,
+			VAS_NM,
+			CASE WHEN SUBSTR(A.AGREE_YN, 1, 1) = '1' THEN 'Y' ELSE 'N' END AS SMS_AGREE_FLAG,
+			CASE WHEN SUBSTR(A.AGREE_YN, 2, 1) = '1' THEN 'Y' ELSE 'N' END AS PRIVACY_AGREE_FLAG,
+			CASE WHEN SUBSTR(A.AGREE_YN, 3, 1) = '1' THEN 'Y' ELSE 'N' END AS TM_AGREE_FLAG,
+			AGENT_ID,
+			PROC_ID,
+			DEALER_ID,
+			F_GET_AGENT_INFO('AGENT_NAME', AGENT_ID) AGENT_NAME,
+			BALANCE,
+			TO_CHAR(LAST_RECHARGE_DT, 'YYYY-MM-DD') LAST_RECHARGE_DT,
+			TO_CHAR(SYNC_DATE, 'YYYY-MM-DD HH24:MI:SS') SYNC_DATE,
+			TO_CHAR(STOP_DT, 'YYYY-MM-DD') STOP_DT,
+			STOP_CL_CD,
+			STOP_RSN_CD,
+			F_GET_COMMON_CD_NM('CUSTOMER_SKT', 'STOP_RSN_CD', STOP_RSN_CD) STOP_RSN_CD_NM,
+			TO_CHAR(CANCEL_DT, 'YYYY-MM-DD') CANCEL_DT,
+			CANCEL_CHG_CD,
+			CANCEL_RSN_CD,
+			RECHARGE_FLAG,
+			CASE RECHARGE_FLAG WHEN 'Y' THEN '가능' ELSE '불가능' END AS RECHARGE_FLAG_STR,
+			SMS_PHONE,
+			SERVICE_TYPE,
+			SCRB_REQ_RSN_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'SCRB_REQ_RSN_CD', SCRB_REQ_RSN_CD) SCRB_REQ_RSN_CD_NM,
+			ZIP,
+			ADDR_INFO1,
+			ADDR_INFO2,
+			CMS_BANK_CD,
+			CMS_ACCOUNT,
+			CMS_USER_NAME,
+			CMS_USER_SSN,
+			CMS_CHARGE,
+			CMS_TRY_REMAINS,
+			LANG,
+			BNP_CO_CD,
+			NVL(F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'BNP_CO_CD', BNP_CO_CD), BNP_CO_CD) BNP_CO_CD_NM,
+			NAT_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'NAT_CD', NAT_CD) NAT_CD_NM,
+			VA_NM,
+			DC_PROD_MTH_AMT,
+			A.USIM_MDL_CD,
+			USIM_TYP_CD,
+			USIM_AMT,
+			SCRB_FEE_TYP,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER','SCRB_FEE_TYP',SCRB_FEE_TYP) SCRB_FEE_TYP_NM,
+			SCRB_FEE,
+			AGRMT_MTH_CNT,
+			PEN_AMT,
+			NVL(ALLOT_MTH_CNT, 0) ALLOT_MTH_CNT,
+			EQUIP_OUT_AMT,
+			NVL(ALLOT_PRN_AMT, 0) ALLOT_PRN_AMT,
+			NVL(ALLOT_INT_AMT, 0) ALLOT_INT_AMT,
+			PAY_MTHD_CD,
+			F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'PAY_MTHD_CD', PAY_MTHD_CD) PAY_MTHD_CD_NM,
+			BL_ACNT_NUM,
+			REP_SV_ACNT_NUM,
+			BILL_ISUE_TYP_CD,
+			EMAIL_ADDR,
+			BANK_CD,
+			BANK_NUM,
+			DPSTR_NM,
+			BANK_CTZ_NUM,
+			CARD_CO_CD,
+			CARD_NUM,
+			CARD_OWNR_NM,
+			CARD_EFF_YM,
+			CARD_CVC_NUM,
+			LGREP_NM,
+			LGREP_CTZ_NUM,
+			LGREP_ADDR_TYP,
+			LGREP_ZIP,
+			LGREP_ADDR1,
+			LGREP_ADDR2,
+			LGREP_EMAIL_ADDR,
+			LGREP_TEL_NUM,
+			ALLOT_SUPRT_MTH,
+			ALLOT_SUPRT_AMT,
+			ADDR_TYP,
+			ALLOT_SUPRT_TYP,
+			DATA_SVC_FLAG,
+			DATA_SVC_ID,
+			TO_CHAR(DATA_SVC_REG_DT, 'YYYY-MM-DD') DATA_SVC_REG_DT,
+			DATA_BALANCE,
+			NVL(CEIL(DATA_BALANCE/20.48), 0) DATA_BALANCE2,
+			TOTAL_CNT,
+			TOTAL_CHG,
+			TAX_FLAG,
+			NVL(F_GET_COMMON_CD_NM('SKT_CUSTOMER', 'TAX_FLAG', TAX_FLAG), '미발행') TAX_FLAG_NM,
+			TO_CHAR(DATA_SYNC_DT, 'YYYY-MM-DD HH24:MI:SS') DATA_SYNC_DT,
+			TO_CHAR(DATA_EMPT_DT, 'YYYY-MM-DD') DATA_EMPT_DT,
+			CU_ACNT_NUM,
+			(
+				SELECT COUNT(*) 
+				FROM CUSTOMER_DOC 
+				WHERE USABLE='U' 
+				AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT 
+				AND DOC_GUBUN = '30'
+			) DOC_AUTO_CNT,
+			(
+				SELECT COUNT(*) 
+				FROM CUSTOMER_DOC 
+				WHERE USABLE='U' 
+				AND SERVICE_ACCOUNT = A.SERVICE_ACCOUNT 
+			) DOC_CNT,
+			BAND_CD,
+			(
+				SELECT BAND_NM
+				FROM CODE_SERVICE_BAND
+				WHERE PROD_CD = A.PROD_CD
+				AND BAND_CD = B.BAND_CD
+			) BAND_NM,
+			(
+				SELECT AMOUNT
+				FROM CODE_SERVICE_BAND
+				WHERE PROD_CD = A.PROD_CD
+				AND BAND_CD = B.BAND_CD
+			) BAND_AMOUNT,
+			(SELECT 'Y' FROM CODE_SERVICE_BAND WHERE PROD_CD = A.PROD_CD LIMIT 1) BAND_FLAG,
+			TO_CHAR(BAND_EXPIRE, 'YYYY-MM-DD') BAND_EXPIRE, 
+			CASE 
+			    WHEN EXISTS (SELECT 1 FROM CUSTOMER_BLACK WHERE SERVICE_ACCOUNT = A.SERVICE_ACCOUNT AND STATUS = 'A')
+				THEN 'Y' 
+				ELSE 'N' 
+			END AS BLACK_YN,
+			IMEI_NUM,
+			TO_CHAR(BASIC_EXPIRE, 'YYYY-MM-DD') BASIC_EXPIRE,
+			MEMO1,
+			MEMO2
+		FROM
+			SKT_CUSTOMER A,
+			CUSTOMER_SKT B
+		WHERE A.SERVICE_ACCOUNT = B.SERVICE_ACCOUNT
+			AND A.SERVICE_ACCOUNT = #{account} 
+	</select>
+	
+	<select id="customer_popup_sms_phone" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_SMS_PHONE(
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{sms_phone,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<select id="customer_popup_rcg_flag" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_ADMIN_CUST_RCG_FLAG(
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{rsn,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}
+		)
+	</select>
+	
+	<!-- lgt 사용량조회 -->
+	<select id="customer_popup_lgt_topup_remains2" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL ${db.mainschema}.P_LGT_APIM_REG(
+		#{serviceId,mode=IN,jdbcType=VARCHAR},
+		#{serviceAccount,mode=IN,jdbcType=VARCHAR},
+		#{priority,mode=IN,jdbcType=VARCHAR},
+		#{callbackType1,mode=IN,jdbcType=VARCHAR},
+		#{callbackSeq1,mode=IN,jdbcType=VARCHAR},
+		#{callbackType2,mode=IN,jdbcType=VARCHAR},
+		#{callbackSeq2,mode=IN,jdbcType=VARCHAR},
+		#{callbackType3,mode=IN,jdbcType=VARCHAR},
+		#{callbackSeq3,mode=IN,jdbcType=VARCHAR},
+		#{value1,mode=IN,jdbcType=VARCHAR},
+		#{value2,mode=IN,jdbcType=VARCHAR},
+		#{value3,mode=IN,jdbcType=VARCHAR},
+		#{value4,mode=IN,jdbcType=VARCHAR},
+		#{value5,mode=IN,jdbcType=VARCHAR},
+		#{value6,mode=IN,jdbcType=VARCHAR},
+		#{value7,mode=IN,jdbcType=VARCHAR},
+		#{value8,mode=IN,jdbcType=VARCHAR},
+		#{value9,mode=IN,jdbcType=VARCHAR},
+		#{value10,mode=IN,jdbcType=VARCHAR},
+		#{value11,mode=IN,jdbcType=VARCHAR},
+		#{value12,mode=IN,jdbcType=VARCHAR},
+		#{value13,mode=IN,jdbcType=VARCHAR},
+		#{value14,mode=IN,jdbcType=VARCHAR},
+		#{value15,mode=IN,jdbcType=VARCHAR},
+		#{value16,mode=IN,jdbcType=VARCHAR},
+		#{value17,mode=IN,jdbcType=VARCHAR},
+		#{value18,mode=IN,jdbcType=VARCHAR},
+		#{value19,mode=IN,jdbcType=VARCHAR},
+		#{value20,mode=IN,jdbcType=VARCHAR},
+		#{value21,mode=IN,jdbcType=VARCHAR},
+		#{value22,mode=IN,jdbcType=VARCHAR},
+		#{value23,mode=IN,jdbcType=VARCHAR},
+		#{value24,mode=IN,jdbcType=VARCHAR},
+		#{value25,mode=IN,jdbcType=VARCHAR},
+		#{value26,mode=IN,jdbcType=VARCHAR},
+		#{value27,mode=IN,jdbcType=VARCHAR},
+		#{value28,mode=IN,jdbcType=VARCHAR},
+		#{value29,mode=IN,jdbcType=VARCHAR},
+		#{value30,mode=IN,jdbcType=VARCHAR},
+		#{value31,mode=IN,jdbcType=VARCHAR},
+		#{value32,mode=IN,jdbcType=VARCHAR},
+		#{value33,mode=IN,jdbcType=VARCHAR},
+		#{value34,mode=IN,jdbcType=VARCHAR},
+		#{value35,mode=IN,jdbcType=VARCHAR},
+		#{value36,mode=IN,jdbcType=VARCHAR},
+		#{value37,mode=IN,jdbcType=VARCHAR},
+		#{value38,mode=IN,jdbcType=VARCHAR},
+		#{value39,mode=IN,jdbcType=VARCHAR},
+		#{value40,mode=IN,jdbcType=VARCHAR},
+		#{value41,mode=IN,jdbcType=VARCHAR},
+		#{value42,mode=IN,jdbcType=VARCHAR},
+		#{value43,mode=IN,jdbcType=VARCHAR},
+		#{value44,mode=IN,jdbcType=VARCHAR},
+		#{value45,mode=IN,jdbcType=VARCHAR},
+		#{value46,mode=IN,jdbcType=VARCHAR},
+		#{value47,mode=IN,jdbcType=VARCHAR},
+		#{value48,mode=IN,jdbcType=VARCHAR},
+		#{value49,mode=IN,jdbcType=VARCHAR},
+		#{value50,mode=IN,jdbcType=VARCHAR},
+		#{value51,mode=IN,jdbcType=VARCHAR},
+		#{value52,mode=IN,jdbcType=VARCHAR},
+		#{value53,mode=IN,jdbcType=VARCHAR},
+		#{value54,mode=IN,jdbcType=VARCHAR},
+		#{value55,mode=IN,jdbcType=VARCHAR},
+		#{value56,mode=IN,jdbcType=VARCHAR},
+		#{value57,mode=IN,jdbcType=VARCHAR},
+		#{value58,mode=IN,jdbcType=VARCHAR},
+		#{value59,mode=IN,jdbcType=VARCHAR},
+		#{value60,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR},
+		#{o_seq,mode=OUT,jdbcType=BIGINT}
+		)
+	</select>
+	
+	<select id="customer_popup_memo" parameterType="map" resultType="egovMap" statementType="CALLABLE">
+		CALL P_ADMIN_CUST_MEMO(
+		#{telco,mode=IN,jdbcType=VARCHAR},
+		#{service_account,mode=IN,jdbcType=VARCHAR},
+		#{memo1,mode=IN,jdbcType=VARCHAR},
+		#{memo2,mode=IN,jdbcType=VARCHAR},
+		#{index,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_ID,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_LANG,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_IP,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_BROWSER,mode=IN,jdbcType=VARCHAR},
+		#{SESSION_ADM_DB_SESSION,mode=IN,jdbcType=VARCHAR},
+		#{o_ret_cd,mode=OUT,jdbcType=VARCHAR},
+		#{o_ret_msg,mode=OUT,jdbcType=VARCHAR}		
+		)
+	</select>
+	
+</mapper>

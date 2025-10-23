@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="telecentro.customer.data_skt_eb14a_list">
+	<sql id="data_skt_eb14a_list">
+	<![CDATA[
+			SELECT /*+ INDEX_DESC(A EB14A_IDX) */
+			   	RECORD_CD,
+				SEQ_NUM,
+				REQ_DT,
+				REQ_CL_CD,
+				F_GET_COMMON_CD_NM('EB14A', 'REQ_CL_CD', REQ_CL_CD) REQ_CL_CD_NM,
+				ACNT_NUM,
+				RSLT_CD,
+				(CASE WHEN RSLT_CD = 'N' THEN '오류' ELSE '성공' END) RSLT_CD_STR,
+				ERR_CD,
+				NVL(F_GET_COMMON_CD_NM('EB14A', 'ERR_CD', ERR_CD), ERR_CD) ERR_CD_NM,
+				FILLER1,
+				SVC_NUM,
+				FILLER,
+				SERVICE_ACCOUNT,
+				F_GET_CUSTOMER_INFO('SERVICE_NUMBER', 'SKT', SERVICE_ACCOUNT) SERVICE_NUMBER,
+				F_GET_ACCOUNT_TELCO('SERVICE_ACCOUNT', SERVICE_ACCOUNT) TELCO,
+				AGENT_ID,
+				TO_CHAR(RECORD_DATE, 'YYYY-MM-DD') RECORD_DATE,
+				FILE_NAME,
+				ERR
+			FROM EB14A A
+			WHERE REQ_DT > '200501'
+			]]>
+		
+			<choose>
+				<when test="sword != '' and sword != null">
+					<choose>
+						<when test="sst == 'job_se_cd'">
+						    AND A.JOB_SE_CD = #{sword}
+						</when>
+						<when test="sst == 'service_number'">
+						  	AND SERVICE_ACCOUNT = (SELECT F_GET_ACCOUNT('SKT', #{sword}))
+						</when>
+						<otherwise>
+					   	    AND ${@telecentro.common.service.CommonUtil@get_dollar_replace_query(sst)} = #{sword}
+						</otherwise>
+					</choose>
+				</when>
+			</choose>	
+			
+			<if test="s_dt != '' and s_dt != null ">
+		   	    AND A.REQ_DT >= REPLACE(#{s_dt}, '-', '')
+	   	    </if>
+	   	    
+	   	    <if test="e_dt != '' and e_dt != null ">
+		   	    AND A.REQ_DT &lt;= REPLACE(#{e_dt}, '-', '')
+	   	    </if>
+			
+			<if test="req_cl_cd != '' and req_cl_cd != null ">
+		   	    AND REQ_CL_CD = #{req_cl_cd}
+	   	    </if>
+	   	    
+	   	    <choose>
+				<when test='err_flag == "Y"'>
+				  	AND RSLT_CD &lt;&gt; 'N'
+				</when>
+				<when test='err_flag == "N"'>
+				  	AND RSLT_CD = 'N'
+				</when>
+				<otherwise>
+				</otherwise>
+			</choose>
+	</sql>
+	<sql id="data_skt_eb14a_list_add">
+	<![CDATA[
+	]]>
+	</sql>
+	<sql id="data_skt_eb14a_list_add_excel">
+	<![CDATA[
+	]]>
+	</sql>
+	<select id="data_skt_eb14a_list" parameterType="map" resultType="egovMap">
+	<![CDATA[
+		SELECT
+            fq.RECORD_CD,
+			fq.SEQ_NUM,
+			fq.REQ_DT,
+			fq.REQ_CL_CD,
+			fq.REQ_CL_CD_NM,
+			fq.ACNT_NUM,
+			fq.RSLT_CD,
+			fq.RSLT_CD_STR,
+			fq.ERR_CD,
+			fq.ERR_CD_NM,
+			fq.FILLER1,
+			fq.SVC_NUM,
+			fq.FILLER,
+			fq.SERVICE_ACCOUNT,
+			fq.SERVICE_NUMBER,
+			fq.TELCO,
+			fq.AGENT_ID,
+			fq.RECORD_DATE,
+			fq.FILE_NAME,
+			fq.ERR
+	]]>
+			<include refid="data_skt_eb14a_list_add" />
+	<![CDATA[
+        FROM (
+	]]>
+			<include refid="data_skt_eb14a_list" />
+			ORDER BY A.REQ_DT DESC
+			LIMIT #{endRowNum} OFFSET #{startRowNum}
+	<![CDATA[
+		) fq
+	]]>
+	</select>
+
+	<select id="data_skt_eb14a_list_excel" parameterType="map" resultType="egovMap">
+		<![CDATA[
+			SELECT
+	            fq.*
+	            ]]><include refid="data_skt_eb14a_list_add" /><![CDATA[
+	            ]]><include refid="data_skt_eb14a_list_add_excel" /><![CDATA[
+	        FROM
+	            (
+	            ]]><include refid="data_skt_eb14a_list" /><![CDATA[
+	            ) fq
+		]]>
+	</select>
+
+	<select id="data_skt_eb14a_list_tot_cnt" parameterType="map"
+		resultType="int">
+	<![CDATA[
+		SELECT
+            COUNT(1) CNT
+        FROM
+            (
+            ]]><include refid="data_skt_eb14a_list" /><![CDATA[
+            )
+	]]>
+	</select>
+</mapper>
