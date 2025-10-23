@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.telesoft.mvnogen.mapper.common.CommonMapper">
+<mapper namespace="telecentro.common.commonMapper">
 	
 	<select id="CommonMapper_admin_auth_menu" parameterType="map" resultType="map">
 		WITH RECURSIVE 
@@ -51,33 +51,33 @@
 	<select id="CommonMapper_get_first_menu" parameterType="map" resultType="map">
 		WITH RECURSIVE T1 AS (
 			SELECT AUTH_CD, AUTH_NAME, AUTH_DEPTH, AUTH_SORT, AUTH_PARENT, AUTH_URL
-			FROM SIWMVNO.ADMIN_AUTH_MENU
+			FROM ADMIN_AUTH_MENU
 			WHERE AUTH_CD IN (
 				SELECT AUTH_CD
-				FROM SIWMVNO.ADMIN_AUTH
+				FROM ADMIN_AUTH
 				WHERE GRADE IN (
-					SELECT GRADE FROM SIWMVNO.ADMIN WHERE ADMIN_ID = #{adminId}
+					SELECT GRADE FROM ADMIN WHERE ADMIN_ID = #{adminId}
 				)
-				AND GRADE IN (SELECT GRADE FROM SIWMVNO.ADMIN_GRADE)
+				AND GRADE IN (SELECT GRADE FROM ADMIN_GRADE)
 			)
 			AND AUTH_TYPE = 'MENU'
     
 			UNION ALL
     
 			SELECT A.AUTH_CD, A.AUTH_NAME, A.AUTH_DEPTH, A.AUTH_SORT, A.AUTH_PARENT, A.AUTH_URL
-			FROM SIWMVNO.ADMIN_AUTH_MENU A
+			FROM ADMIN_AUTH_MENU A
 			INNER JOIN T1 AA ON AA.AUTH_PARENT = A.AUTH_CD
 			WHERE A.AUTH_TYPE = 'MENU'
 		),
 		T2 AS (
 			SELECT AUTH_CD, AUTH_NAME, AUTH_DEPTH, AUTH_SORT, AUTH_PARENT, AUTH_URL
-			FROM SIWMVNO.ADMIN_AUTH_MENU
+			FROM ADMIN_AUTH_MENU
 			WHERE AUTH_TYPE = 'SKIP'
     
 			UNION ALL
     
 			SELECT A.AUTH_CD, A.AUTH_NAME, A.AUTH_DEPTH, A.AUTH_SORT, A.AUTH_PARENT, A.AUTH_URL
-			FROM SIWMVNO.ADMIN_AUTH_MENU A
+			FROM ADMIN_AUTH_MENU A
 			INNER JOIN T2 AA ON AA.AUTH_PARENT = A.AUTH_CD
 		),
 		UNION_QUERY AS (
